@@ -2,85 +2,198 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Sorpresa Especial 🎁</title>
-    
-    <meta property="og:title" content="Tienes un mensaje pendiente 📩">
-    <meta property="og:description" content="Haz clic para abrir la notificación especial que te enviaron.">
-    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
+    <!-- ===== OPEN GRAPH (WhatsApp / Telegram / Instagram preview) ===== -->
+    <meta property="og:title" content="💝 Tienes una sorpresa especial">
+    <meta property="og:description" content="Alguien pensó en ti hoy y te envió una dedicatoria especial. ¡Toca para abrirla! ❤️">
+    <meta property="og:image" content="https://thumbs.dreamstime.com/b/d-kawaii-valentines-day-gift-box-red-ribbon-heart-shaped-candies-golden-coins-soft-pink-clouds-glowing-stars-confetti-421078191.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="💝 Tienes una sorpresa especial">
+    <meta name="twitter:description" content="Alguien pensó en ti hoy. ¡Toca para abrir tu dedicatoria! ❤️">
+    <meta name="twitter:image" content="https://thumbs.dreamstime.com/b/d-kawaii-valentines-day-gift-box-red-ribbon-heart-shaped-candies-golden-coins-soft-pink-clouds-glowing-stars-confetti-421078191.jpg">
+
+    <!-- ===== CDNs ===== -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4 font-sans overflow-x-hidden">
 
+<body class="min-h-screen flex items-center justify-center p-4 overflow-x-hidden">
+
+    <!-- ===== LANGUAGE SWITCHER ===== -->
     <div class="fixed top-4 right-4 z-50 flex gap-2">
-        <button onclick="changeLang('es')" class="bg-white/10 hover:bg-white/30 text-white px-4 py-1 rounded-full text-xs transition border border-white/20">ES 🇲🇽</button>
-        <button onclick="changeLang('en')" class="bg-white/10 hover:bg-white/30 text-white px-4 py-1 rounded-full text-xs transition border border-white/20">EN 🇺🇸</button>
+        <button onclick="changeLang('es')" id="btn-lang-es" class="lang-btn active px-4 py-1.5 rounded-full text-xs font-bold transition border backdrop-blur-sm">
+            🇲🇽 ES
+        </button>
+        <button onclick="changeLang('en')" id="btn-lang-en" class="lang-btn px-4 py-1.5 rounded-full text-xs font-bold transition border backdrop-blur-sm">
+            🇺🇸 EN
+        </button>
     </div>
 
-    <div id="main-container" class="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] p-8 max-w-md w-full text-center relative transition-all duration-500">
-        
-        <div id="creator-view">
-            <h1 id="ui-title" class="text-3xl font-black text-slate-800 mb-2">MENSAJERÍA VIP</h1>
-            <p id="ui-desc" class="text-pink-500 mb-6 text-xs font-bold uppercase tracking-widest italic">Personaliza tu envío</p>
-            
-            <div class="space-y-4 text-left">
-                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Tipo de relación</label>
-                <select id="main-category" onchange="updateSubCats()" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium"></select>
-                
-                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Destinatario</label>
-                <select id="sub-category" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium"></select>
-                
-                <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Tu mensaje</label>
-                <textarea id="custom-message" placeholder="Escribe algo especial..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl h-24 resize-none outline-none focus:border-pink-400 transition"></textarea>
+    <!-- ===== MAIN CONTAINER ===== -->
+    <div id="main-container" class="card-main rounded-[2.5rem] p-8 max-w-md w-full text-center relative">
 
-                <button onclick="generateLink()" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl hover:bg-black transform active:scale-95 transition shadow-xl uppercase tracking-wider">
+        <!-- ====================================================== -->
+        <!-- CREATOR VIEW -->
+        <!-- ====================================================== -->
+        <div id="creator-view">
+            <div class="text-5xl mb-3 heartbeat">💝</div>
+            <h1 id="ui-title" class="creator-title text-3xl font-black text-slate-800 mb-1">MENSAJERÍA VIP</h1>
+            <p id="ui-desc" class="text-pink-500 mb-7 text-[11px] font-bold uppercase tracking-widest">Personaliza tu envío 💝</p>
+
+            <div class="space-y-4 text-left">
+
+                <!-- Tipo de relación -->
+                <div>
+                    <label id="lbl-rel" class="label-field">Tipo de relación</label>
+                    <select id="main-category" onchange="updateSubCats()"
+                        class="select-field w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium text-sm">
+                    </select>
+                </div>
+
+                <!-- Destinatario -->
+                <div>
+                    <label id="lbl-dest" class="label-field">¿Para quién es?</label>
+                    <select id="sub-category"
+                        class="select-field w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium text-sm">
+                    </select>
+                </div>
+
+                <!-- Mensaje -->
+                <div>
+                    <label id="lbl-msg" class="label-field">Tu mensaje especial</label>
+                    <textarea id="custom-message"
+                        placeholder="Escribe algo especial para esa persona... 💕"
+                        class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl h-28 resize-none outline-none focus:border-pink-400 transition text-sm leading-relaxed">
+                    </textarea>
+                </div>
+
+                <!-- Botón generar -->
+                <button id="btn-generate" onclick="generateLink()"
+                    class="btn-primary w-full text-white font-black py-4 rounded-2xl transform active:scale-95 transition shadow-xl uppercase tracking-wider text-sm">
                     Generar Link 🚀
                 </button>
             </div>
 
-            <div id="result-area" class="mt-6 hidden animate-bounce">
-                <div class="p-4 bg-green-50 rounded-2xl border-2 border-green-200 flex items-center gap-2">
-                    <input id="final-url" type="text" readonly class="w-full bg-transparent text-[10px] text-green-700 font-mono outline-none">
-                    <button onclick="copyLink()" class="bg-green-500 text-white p-2 rounded-xl text-xs">COPIAR</button>
+            <!-- Resultado del link -->
+            <div id="result-area" class="mt-5 hidden">
+                <div class="p-4 bg-green-50 rounded-2xl border-2 border-green-200">
+                    <p class="text-xs text-green-700 font-bold mb-2 text-left">✅ ¡Tu link está listo! Cópialo y envíalo:</p>
+                    <div class="flex items-center gap-2">
+                        <input id="final-url" type="text" readonly
+                            class="flex-1 bg-white text-[11px] text-green-700 font-mono outline-none border border-green-200 rounded-xl p-2 min-w-0 overflow-hidden text-ellipsis">
+                        <button id="btn-copy" onclick="copyLink()"
+                            class="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-xl text-[11px] font-black whitespace-nowrap transition active:scale-95">
+                            COPIAR
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <!-- Trigger oculto de stats (clic 5 veces) -->
+            <p id="stats-trigger" onclick="handleStatsTrigger()"
+                class="stats-trigger text-slate-300 text-[9px] mt-6 cursor-pointer select-none hover:text-pink-400 transition">
+                Hecho con ❤️ · naofomi
+            </p>
         </div>
 
+        <!-- ====================================================== -->
+        <!-- RECEIVER VIEW -->
+        <!-- ====================================================== -->
         <div id="receiver-view" class="hidden">
-            <div id="prank-screen" class="py-6">
-                <div id="troll-visual" class="text-6xl mb-4 animate-spin-slow">⚠️</div>
-                <div id="prank-text" class="text-sm font-mono font-bold text-red-500 mb-8 min-h-[100px] bg-black p-5 rounded-2xl shadow-inner border border-red-500/50 text-left"></div>
-                <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                    <div id="progress-bar" class="bg-red-500 h-full transition-all duration-100" style="width: 0%"></div>
-                </div>
-                <p id="ui-status" class="text-[9px] mt-4 text-slate-400 font-mono tracking-widest uppercase">System Status: Warning</p>
+
+            <!-- 1) TAP TO OPEN OVERLAY -->
+            <div id="tap-overlay" class="py-8 px-2 fade-in">
+                <div class="gift-bounce text-8xl mb-6">🎁</div>
+                <h2 id="tap-title" class="creator-title text-2xl font-black text-slate-800 mb-2">Tienes una sorpresa</h2>
+                <p id="tap-sub" class="text-slate-500 text-sm mb-8">Alguien pensó en ti hoy 💕</p>
+                <button id="tap-btn" onclick="beginPrank()"
+                    class="btn-primary pulse-btn text-white font-black py-4 px-12 rounded-2xl text-lg shadow-xl transform active:scale-95 transition">
+                    ¡Abrir! 💝
+                </button>
+                <p class="text-slate-300 text-[10px] mt-5">Activa el sonido para la experiencia completa 🔊</p>
             </div>
 
+            <!-- 2) PRANK / HACKING SCREEN -->
+            <div id="prank-screen" class="hidden py-6">
+                <div id="troll-visual" class="text-6xl mb-4 animate-spin-slow">⚠️</div>
+
+                <!-- CRITICAL FIX: whitespace-pre-line para que \n funcione -->
+                <div id="prank-text"
+                    class="terminal-box text-sm font-mono font-bold mb-8 min-h-[160px] p-5 rounded-2xl text-left whitespace-pre-line leading-8 terminal-cursor">
+                </div>
+
+                <!-- Barra de progreso -->
+                <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden mb-2 border border-slate-200">
+                    <div id="progress-bar" class="progress-glow h-full rounded-full" style="width: 0%;"></div>
+                </div>
+                <p id="ui-status" class="text-[9px] mt-2 text-slate-400 font-mono tracking-widest uppercase">
+                    System Status: ⚠️ WARNING
+                </p>
+            </div>
+
+            <!-- 3) FINAL / REVEAL SCREEN -->
             <div id="final-screen" class="hidden">
-                <div class="text-6xl mb-4">✨</div>
-                <h2 id="final-greeting" class="text-2xl font-black text-slate-800 mb-2"></h2>
-                <p id="final-text" class="text-md text-slate-600 italic mb-8 px-2"></p>
-                
-                <div id="question-area" class="hidden mb-10">
-                    <p class="font-bold mb-4 text-pink-500">¿Me perdonas la broma? 🥺</p>
-                    <div class="flex justify-center gap-4 h-12">
-                        <button onclick="celebrate()" class="bg-green-500 text-white px-8 py-2 rounded-full font-bold shadow-lg">SÍ</button>
-                        <button id="btn-no" class="bg-slate-300 text-slate-600 px-8 py-2 rounded-full font-bold absolute">NO</button>
+                <div class="text-5xl mb-2 float-anim">✨</div>
+                <div class="text-5xl mb-5 heartbeat">💝</div>
+
+                <h2 id="final-greeting" class="creator-title text-2xl font-black text-slate-800 mb-4"></h2>
+
+                <div class="final-message-box bg-pink-50 border-2 border-pink-100 rounded-2xl p-5 mb-6 text-left">
+                    <p id="final-text" class="text-sm text-slate-700 leading-relaxed italic"></p>
+                </div>
+
+                <!-- Pregunta de amor (solo categoría "amor") -->
+                <div id="question-area" class="hidden mb-7">
+                    <p id="question-text" class="font-black mb-5 text-pink-500 text-base">¿Me perdonas la broma? 🥺</p>
+                    <!-- Contenedor con overflow-hidden para que el btn-no no se salga de pantalla -->
+                    <div id="btn-no-wrapper" class="relative flex justify-center items-center h-14 overflow-visible">
+                        <button id="btn-yes" onclick="celebrate()"
+                            class="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-10 py-3 rounded-full font-black shadow-lg hover:shadow-green-200 hover:shadow-xl transform active:scale-95 transition z-10">
+                            Sí ❤️
+                        </button>
+                        <button id="btn-no"
+                            class="bg-slate-200 text-slate-500 px-7 py-3 rounded-full font-bold transition text-sm absolute right-0">
+                            NO
+                        </button>
                     </div>
                 </div>
 
-                <div class="mt-8 pt-6 border-t border-slate-100">
-                    <button onclick="showDonationJoke()" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold py-2 px-6 rounded-full text-[10px] uppercase transition">
+                <!-- ★ BOTÓN COMPARTIR (nuevo) ★ -->
+                <div class="space-y-2 mt-6">
+                    <button onclick="goToCreator()"
+                        class="btn-primary w-full text-white font-black py-4 rounded-2xl text-sm shadow-xl transform active:scale-95 transition">
+                        💌 ¡Quiero enviarle esto a alguien!
+                    </button>
+                    <p id="share-sub" class="text-slate-400 text-[11px]">Crea tu propia sorpresa personalizada →</p>
+                </div>
+
+                <!-- Donación broma -->
+                <div class="mt-6 pt-5 border-t border-slate-100">
+                    <button onclick="showDonationJoke()"
+                        class="bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold py-2 px-6 rounded-full text-[10px] uppercase transition border border-amber-200">
                         ☕ Invitar un café al creador
                     </button>
                 </div>
+
+                <p id="stats-trigger-r" onclick="handleStatsTrigger()"
+                    class="stats-trigger text-slate-200 text-[9px] mt-4 cursor-pointer select-none hover:text-pink-400 transition">
+                    Hecho con ❤️ · naofomi
+                </p>
             </div>
+
         </div>
-    </div>
+    </div><!-- /main-container -->
 
     <script src="app.js"></script>
 </body>
 </html>
+   
