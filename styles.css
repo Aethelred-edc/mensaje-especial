@@ -1,39 +1,55 @@
-/* ============================================================
-   styles.css — Sorpresa Especial 💝
-   Versión 2.0 — Animaciones, terminal, mobile-first
-   ============================================================ */
+/* ================================================================
+   styles.css — Sorpresa Especial 💝  v3.0
+   ================================================================ */
 
-/* ─── FONTS ─────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Space+Mono:wght@400;700&display=swap');
 
-/* ─── BODY & BACKGROUND ──────────────────────────────────── */
+/* ─── BODY & BACKGROUND ───────────────────────────────────── */
 body {
     background-color: #0f172a;
     background-image:
-        radial-gradient(ellipse at 15% 50%,  rgba(236, 72, 153, 0.18) 0%, transparent 55%),
-        radial-gradient(ellipse at 85% 20%,  rgba(244, 63,  94, 0.14) 0%, transparent 45%),
-        radial-gradient(ellipse at 50% 100%, rgba(168, 85, 247, 0.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 10% 55%,  rgba(236, 72, 153, 0.20) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 15%,  rgba(244, 63,  94, 0.16) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 100%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
         radial-gradient(circle at 2px 2px,   rgba(255,255,255,0.04)   1px, transparent 0);
     background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px;
     font-family: 'Syne', system-ui, sans-serif;
 }
 
-/* ─── MAIN CARD ──────────────────────────────────────────── */
+/* ─── CARD ────────────────────────────────────────────────── */
 .card-main {
     background: #ffffff;
     box-shadow:
-        0 25px 60px rgba(0, 0, 0, 0.35),
-        0  4px 20px rgba(236, 72, 153, 0.15),
-        inset 0 1px 0 rgba(255,255,255,0.8);
+        0 30px 70px rgba(0,0,0,0.4),
+        0  4px 20px rgba(236, 72, 153, 0.2),
+        inset 0 1px 0 rgba(255,255,255,0.9);
     backface-visibility: hidden;
     will-change: transform;
 }
 
-/* ─── TYPOGRAPHY ─────────────────────────────────────────── */
+/* ─── TYPOGRAPHY ──────────────────────────────────────────── */
 .creator-title { font-family: 'Syne', sans-serif; letter-spacing: -0.5px; }
-.label-field   { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; margin-left: 0.25rem; }
+.label-field {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+}
+.optional-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: #ec4899;
+    background: #fce7f3;
+    padding: 2px 7px;
+    border-radius: 99px;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+}
 
-/* ─── FORM ELEMENTS ──────────────────────────────────────── */
+/* ─── FORM ────────────────────────────────────────────────── */
 .select-field {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23f9a8d4' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
@@ -43,7 +59,7 @@ body {
     cursor: pointer;
 }
 
-/* ─── BUTTONS ────────────────────────────────────────────── */
+/* ─── BUTTONS ─────────────────────────────────────────────── */
 .btn-primary {
     background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
     position: relative;
@@ -54,117 +70,138 @@ body {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%);
     pointer-events: none;
 }
 .btn-primary:hover {
     background: linear-gradient(135deg, #db2777 0%, #e11d48 100%);
-    box-shadow: 0 8px 25px rgba(244, 63, 94, 0.45);
+    box-shadow: 0 10px 30px rgba(244, 63, 94, 0.5);
     transform: translateY(-1px);
 }
 .btn-primary:active { transform: scale(0.97) translateY(0); }
 
-/* ─── LANGUAGE BUTTONS ───────────────────────────────────── */
+/* ─── LANG BUTTONS ────────────────────────────────────────── */
 .lang-btn {
-    color: rgba(255,255,255,0.8);
+    color: rgba(255,255,255,0.75);
     background: rgba(255,255,255,0.08);
     border-color: rgba(255,255,255,0.15);
+    font-size: 11px;
 }
 .lang-btn:hover {
     background: rgba(255,255,255,0.18);
     color: #fff;
 }
 .lang-btn.active {
-    background: rgba(236, 72, 153, 0.35) !important;
-    border-color: rgba(236, 72, 153, 0.6) !important;
+    background: rgba(236, 72, 153, 0.40) !important;
+    border-color: rgba(236, 72, 153, 0.65) !important;
     color: #fff !important;
-    box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
+    box-shadow: 0 0 14px rgba(236, 72, 153, 0.45);
 }
 
-/* ─── TERMINAL / PRANK TEXT ──────────────────────────────── */
+/* ─── TERMINAL / PRANK TEXT ───────────────────────────────── */
+/*
+ ★ FIX CLAVE DEL BUG:
+   white-space: pre-wrap
+     → preserva TODOS los espacios y los \n (saltos de línea)
+     → permite que las líneas se envuelvan si son muy largas
+   overflow-wrap: break-word
+     → rompe palabras muy largas para evitar overflow horizontal
+   La escritura en JS usa textContent (NO innerText)
+*/
 #prank-text {
-    background-color: #020617 !important;
+    background-color: #020617;
     color: #4ade80;
-    font-family: 'Space Mono', monospace !important;
-    font-size: 12px;
-    text-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
-    letter-spacing: 0.03em;
-    line-height: 2 !important;
-    border: 1px solid rgba(74, 222, 128, 0.25);
-    /* ★ FIX CRÍTICO: renderizar \n como saltos de línea */
-    white-space: pre-line;
+    font-family: 'Space Mono', 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.85;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 8px rgba(74, 222, 128, 0.55);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    min-height: 155px;
+
+    /* ★ LA CLAVE — preservar espacios y saltos de línea */
+    white-space: pre-wrap;
     word-break: break-word;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    overflow-x: hidden;
+
     animation: terminalGlow 2.5s ease-in-out infinite;
 }
 
-/* ─── TERMINAL CURSOR ─────────────────────────────────────── */
+/* ─── CURSOR PARPADEANTE ──────────────────────────────────── */
 .terminal-cursor::after {
     content: '▋';
-    animation: blink 0.8s step-end infinite;
+    animation: blink 0.75s step-end infinite;
     color: #4ade80;
-    text-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
+    text-shadow: 0 0 6px rgba(74, 222, 128, 0.9);
 }
 
-/* ─── PROGRESS BAR ───────────────────────────────────────── */
+/* ─── PROGRESS BAR ────────────────────────────────────────── */
 .progress-glow {
-    background: linear-gradient(90deg, #ef4444 0%, #f97316 60%, #fbbf24 100%);
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
-    transition: width 0.05s linear;
+    background: linear-gradient(90deg, #ef4444 0%, #f97316 55%, #fbbf24 100%);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.65);
+    transition: width 0.04s linear;
     position: relative;
+    border-radius: 999px;
 }
 .progress-glow::after {
     content: '';
     position: absolute;
     right: 0; top: 0; bottom: 0;
-    width: 20px;
-    background: rgba(255, 255, 255, 0.4);
-    filter: blur(4px);
+    width: 22px;
+    background: rgba(255, 255, 255, 0.45);
+    filter: blur(5px);
+    border-radius: 0 999px 999px 0;
 }
 
-/* ─── FINAL MESSAGE BOX ──────────────────────────────────── */
+/* ─── FINAL MESSAGE BOX ───────────────────────────────────── */
 .final-message-box {
     position: relative;
 }
 .final-message-box::before {
     content: '"';
     position: absolute;
-    top: -8px; left: 12px;
-    font-size: 3rem;
+    top: -10px; left: 10px;
+    font-size: 3.2rem;
     color: #fce7f3;
     font-family: Georgia, serif;
     line-height: 1;
+    pointer-events: none;
 }
 
-/* ─── STATS TRIGGER (texto oculto) ──────────────────────── */
+/* ─── STATS TRIGGER ───────────────────────────────────────── */
 .stats-trigger {
     transition: color 0.3s;
     user-select: none;
     -webkit-user-select: none;
 }
 
-/* ─── BOTÓN NO FUGITIVO ──────────────────────────────────── */
+/* ─── BTN NO FUGITIVO ─────────────────────────────────────── */
 #btn-no {
     transition: all 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     cursor: pointer;
     position: absolute;
 }
+.btn-no-surrender {
+    transition: all 0.4s ease !important;
+    animation: heartbeat 1.5s ease-in-out infinite !important;
+}
 
-/* ─── KEYFRAMES ──────────────────────────────────────────── */
+/* ─── KEYFRAMES ───────────────────────────────────────────── */
 
 /* Shake intenso para el susto */
 @keyframes shake {
-    0%   { transform: translate(2px, 1px)  rotate(0deg);    }
-    10%  { transform: translate(-1px, -2px) rotate(-1deg); }
-    20%  { transform: translate(-3px, 0px)  rotate(1deg);  }
-    30%  { transform: translate(0px, 2px)   rotate(0deg);  }
-    40%  { transform: translate(1px, -1px)  rotate(1deg);  }
-    50%  { transform: translate(-1px, 2px)  rotate(-1deg); }
-    60%  { transform: translate(-3px, 1px)  rotate(0deg);  }
-    70%  { transform: translate(2px, 1px)   rotate(-1deg); }
-    80%  { transform: translate(-1px, -1px) rotate(1deg);  }
-    90%  { transform: translate(2px, 2px)   rotate(0deg);  }
-    100% { transform: translate(1px, -2px)  rotate(-1deg); }
+    0%   { transform: translate(2px,  1px)   rotate(0deg);  }
+    10%  { transform: translate(-2px, -2px)  rotate(-1deg); }
+    20%  { transform: translate(-3px,  0px)  rotate(1deg);  }
+    30%  { transform: translate( 0px,  2px)  rotate(0deg);  }
+    40%  { transform: translate( 1px, -1px)  rotate(1deg);  }
+    50%  { transform: translate(-2px,  2px)  rotate(-1deg); }
+    60%  { transform: translate(-3px,  1px)  rotate(0deg);  }
+    70%  { transform: translate( 3px,  1px)  rotate(-1deg); }
+    80%  { transform: translate(-2px, -1px)  rotate(1deg);  }
+    90%  { transform: translate( 2px,  2px)  rotate(0deg);  }
+    100% { transform: translate( 1px, -2px)  rotate(-1deg); }
 }
 
 /* Spin del ícono de advertencia */
@@ -173,103 +210,103 @@ body {
     to   { transform: rotate(360deg); }
 }
 
-/* Rebote del regalo en el overlay */
+/* Rebote suave del regalo */
 @keyframes giftBounce {
-    0%, 100% { transform: translateY(0)    scale(1);    }
-    40%       { transform: translateY(-18px) scale(1.08); }
-    70%       { transform: translateY(-8px)  scale(1.04); }
+    0%,100% { transform: translateY(0)     scale(1);    }
+    35%      { transform: translateY(-20px) scale(1.09); }
+    65%      { transform: translateY(-9px)  scale(1.05); }
 }
 
 /* Pulso rosa para el botón de abrir */
 @keyframes pulsePink {
-    0%,100% { box-shadow: 0 0 0 0 rgba(236,72,153,0.5), 0 8px 25px rgba(244,63,94,0.3); }
-    50%     { box-shadow: 0 0 0 14px rgba(236,72,153,0), 0 12px 35px rgba(244,63,94,0.5); }
+    0%,100% { box-shadow: 0 0 0 0   rgba(236,72,153,0.55), 0 8px 25px rgba(244,63,94,0.35); }
+    50%      { box-shadow: 0 0 0 14px rgba(236,72,153,0),   0 12px 35px rgba(244,63,94,0.55); }
 }
 
-/* Fade in + slide up */
+/* Fade-in + slide up */
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(22px); }
+    from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* Parpadeo del cursor terminal */
+/* Parpadeo cursor terminal */
 @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0; }
+    0%,100% { opacity: 1; }
+    50%     { opacity: 0; }
 }
 
 /* Latido del corazón */
 @keyframes heartbeat {
     0%,100% { transform: scale(1);    }
-    14%     { transform: scale(1.18); }
+    14%     { transform: scale(1.2);  }
     28%     { transform: scale(1);    }
-    42%     { transform: scale(1.12); }
+    42%     { transform: scale(1.14); }
     70%     { transform: scale(1);    }
 }
 
 /* Flotación suave */
 @keyframes float {
-    0%, 100% { transform: translateY(0);   }
-    50%       { transform: translateY(-8px); }
+    0%, 100% { transform: translateY(0);    }
+    50%       { transform: translateY(-9px); }
 }
 
-/* Brillo del terminal */
+/* Brillo pulsante del terminal */
 @keyframes terminalGlow {
-    0%,100% { box-shadow: 0 0 5px  rgba(74,222,128,0.2), inset 0 0 8px  rgba(74,222,128,0.05); }
-    50%     { box-shadow: 0 0 15px rgba(74,222,128,0.4), inset 0 0 15px rgba(74,222,128,0.10); }
+    0%,100% { box-shadow: 0 0 6px  rgba(74,222,128,0.2), inset 0 0 8px  rgba(74,222,128,0.05); }
+    50%     { box-shadow: 0 0 18px rgba(74,222,128,0.45), inset 0 0 16px rgba(74,222,128,0.12); }
 }
 
-/* ─── CLASES DE ANIMACIÓN APLICADAS ─────────────────────── */
-.shake-heavy    { animation: shake     0.09s infinite; }
-.animate-spin-slow { animation: spin   3s linear infinite; }
-.gift-bounce    { animation: giftBounce 2s ease-in-out infinite; }
-.pulse-btn      { animation: pulsePink  2s ease-in-out infinite; }
-.fade-in        { animation: fadeInUp  0.5s ease-out both; }
-.heartbeat      { animation: heartbeat 1.8s ease-in-out infinite; }
-.float-anim     { animation: float     3s ease-in-out infinite; }
+/* ─── CLASES ──────────────────────────────────────────────── */
+.shake-heavy       { animation: shake       0.09s infinite; }
+.animate-spin-slow { animation: spin        3.5s linear infinite; }
+.gift-bounce       { animation: giftBounce  2s ease-in-out infinite; }
+.pulse-btn         { animation: pulsePink   2s ease-in-out infinite; }
+.fade-in           { animation: fadeInUp    0.5s ease-out both; }
+.heartbeat         { animation: heartbeat   1.9s ease-in-out infinite; }
+.float-anim        { animation: float       3s ease-in-out infinite; }
 
-/* ─── RESPONSIVE / MOBILE ────────────────────────────────── */
+/* ─── RESULT AREA ─────────────────────────────────────────── */
+#result-area:not(.hidden)  { animation: fadeInUp 0.4s ease-out; }
+#final-screen:not(.hidden) { animation: fadeInUp 0.5s ease-out; }
+#celebrate-msg:not(.hidden){ animation: fadeInUp 0.4s ease-out; }
+
+/* ─── RESPONSIVE / MOBILE ─────────────────────────────────── */
 @media (max-width: 500px) {
-    .card-main {
-        padding: 1.5rem;
-        border-radius: 2rem;
-        margin: 0.25rem;
-    }
+    .card-main { padding: 1.5rem; border-radius: 2rem; }
+
+    /* En móvil el terminal necesita fuente más pequeña pero legible */
     #prank-text {
         font-size: 11px !important;
+        line-height: 1.75 !important;
         padding: 0.85rem !important;
         min-height: 130px !important;
-        line-height: 1.9 !important;
     }
-    /* En móvil el btn-no no se sale de pantalla */
+
+    /* Btn-no estático en móvil (no puede escapar por pantalla pequeña) */
     #btn-no-wrapper {
         flex-wrap: wrap;
         gap: 0.75rem;
         height: auto !important;
-        padding-bottom: 0.5rem;
+        overflow: visible;
     }
     #btn-no {
         position: relative !important;
-        left: auto !important;
-        top: auto !important;
-        right: auto !important;
+        left: auto   !important;
+        top: auto    !important;
+        right: auto  !important;
+        transform: none !important;
     }
+
     .creator-title { font-size: 1.6rem; }
 }
 
 @media (max-width: 360px) {
-    .card-main { padding: 1.25rem; }
+    .card-main  { padding: 1.15rem; }
     #prank-text { font-size: 10px !important; }
 }
 
-/* ─── SCROLLBAR ──────────────────────────────────────────── */
+/* ─── SCROLLBAR ───────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #f9a8d4; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #ec4899; }
-
-/* ─── RESULT AREA ANIMATION ──────────────────────────────── */
-#result-area:not(.hidden) { animation: fadeInUp 0.4s ease-out; }
-
-/* ─── FINAL SCREEN ───────────────────────────────────────── */
-#final-screen:not(.hidden) { animation: fadeInUp 0.5s ease-out; }
