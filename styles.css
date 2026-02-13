@@ -1,10 +1,15 @@
 /* ================================================================
-   styles.css — Sorpresa Especial 💝  v4.0
+   styles.css — Sorpresa Especial 💝  v4.1
+   Fixes:
+   ✅ Texto sin recortes (overflow visible, line-height, text-rendering)
+   ✅ Tarjeta sin overflow hidden para no clipear acentos
+   ✅ Visuales del modo chaos (prank screen roja parpadeante)
+   ✅ Música btn con glow cuando activo
    ================================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Space+Mono:wght@400;700&display=swap');
 
-/* ─── BODY ────────────────────────────────────────────────────── */
+/* ─── BODY ─────────────────────────────────────────────────────── */
 body {
     background-color: #0f172a;
     background-image:
@@ -14,9 +19,10 @@ body {
         radial-gradient(circle at 2px 2px,   rgba(255,255,255,0.04)   1px, transparent 0);
     background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px;
     font-family: 'Syne', system-ui, sans-serif;
+    /* ★ FIX: NO overflow-x:hidden en body — clipa acentos con border-radius */
 }
 
-/* ─── MAIN CARD ───────────────────────────────────────────────── */
+/* ─── MAIN CARD ─────────────────────────────────────────────────── */
 .card-main {
     background: #ffffff;
     box-shadow:
@@ -25,17 +31,49 @@ body {
         inset 0 1px 0 rgba(255,255,255,0.9);
     backface-visibility: hidden;
     will-change: transform;
+    /* ★ FIX: overflow visible para que acentos no queden cortados
+       Se usa clip-path solo para las esquinas redondeadas si es necesario */
+    overflow: visible;
 }
 
-/* ─── TYPOGRAPHY ──────────────────────────────────────────────── */
-.creator-title { font-family: 'Syne', sans-serif; letter-spacing: -0.5px; }
+/* ─── TYPOGRAPHY ─────────────────────────────────────────────────── */
+.creator-title {
+    font-family: 'Syne', sans-serif;
+    letter-spacing: -0.5px;
+    /* ★ FIX: line-height generoso para acentos/tildes superiores */
+    line-height: 1.15;
+    /* ★ FIX: overflow visible para que tildes no se corten */
+    overflow: visible;
+    /* ★ FIX: padding top por si las tildes se cortan con border-radius */
+    padding-top: 2px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ★ FIX: El h1 del título no debe clipear */
+#ui-title {
+    overflow: visible;
+    line-height: 1.1;
+    padding-top: 4px;
+    padding-bottom: 2px;
+    margin-top: 0;
+}
+
+/* ★ FIX: El creator view debe tener padding-top para no clipear el emoji */
+#creator-view,
+#receiver-view {
+    overflow: visible;
+}
+
 .label-field {
     display: block;
     font-size: 10px; font-weight: 700;
     color: #94a3b8;
     text-transform: uppercase; letter-spacing: 0.1em;
     margin-bottom: 0.3rem;
+    text-rendering: optimizeLegibility;
 }
+
 .optional-badge {
     font-size: 9px; font-weight: 700;
     color: #ec4899;
@@ -44,7 +82,7 @@ body {
     white-space: nowrap; letter-spacing: 0.03em;
 }
 
-/* ─── FORM ────────────────────────────────────────────────────── */
+/* ─── FORM ──────────────────────────────────────────────────────── */
 .select-field {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23f9a8d4' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
@@ -54,7 +92,7 @@ body {
     cursor: pointer;
 }
 
-/* ─── PRIMARY BUTTON ──────────────────────────────────────────── */
+/* ─── BOTÓN PRIMARIO ─────────────────────────────────────────────── */
 .btn-primary {
     background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
     position: relative; overflow: hidden;
@@ -68,12 +106,12 @@ body {
 }
 .btn-primary:hover {
     background: linear-gradient(135deg, #db2777 0%, #e11d48 100%);
-    box-shadow: 0 10px 30px rgba(244, 63, 94, 0.50);
+    box-shadow: 0 10px 30px rgba(244,63,94,0.50);
     transform: translateY(-1px);
 }
 .btn-primary:active { transform: scale(0.97); }
 
-/* ─── LANG BUTTONS ────────────────────────────────────────────── */
+/* ─── LANG BUTTONS ──────────────────────────────────────────────── */
 .lang-btn {
     color: rgba(255,255,255,0.75);
     background: rgba(255,255,255,0.08);
@@ -82,37 +120,36 @@ body {
 }
 .lang-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
 .lang-btn.active {
-    background: rgba(236, 72, 153, 0.40) !important;
-    border-color: rgba(236, 72, 153, 0.65) !important;
+    background: rgba(236,72,153,0.40) !important;
+    border-color: rgba(236,72,153,0.65) !important;
     color: #fff !important;
-    box-shadow: 0 0 14px rgba(236, 72, 153, 0.45);
+    box-shadow: 0 0 14px rgba(236,72,153,0.45);
 }
 
-/* ─── MUSIC BUTTON ────────────────────────────────────────────── */
+/* ─── MUSIC BUTTON ──────────────────────────────────────────────── */
 .music-btn {
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.20);
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
     color: white;
-    font-size: 1.2rem;
-    width: 42px; height: 42px;
+    font-size: 1.15rem;
+    width: 44px; height: 44px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     backdrop-filter: blur(8px);
     transition: all 0.25s ease;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.30);
 }
 .music-btn:hover {
-    background: rgba(236, 72, 153, 0.35);
-    border-color: rgba(236, 72, 153, 0.6);
-    box-shadow: 0 0 18px rgba(236, 72, 153, 0.4);
+    background: rgba(236,72,153,0.35);
+    border-color: rgba(236,72,153,0.60);
     transform: scale(1.1);
 }
 .music-btn:active { transform: scale(0.95); }
 
-/* ─── TERMINAL ────────────────────────────────────────────────── */
+/* ─── TERMINAL / PRANK TEXT ─────────────────────────────────────── */
 /*
-  ★ FIX DEFINITIVO texto pegado:
+  ★ FIX DEFINITIVO del texto pegado:
     white-space: pre-wrap  → preserva \n Y espacios, permite word-wrap
     word-break: break-word → líneas muy largas se rompen
     JS usa: el.textContent += char  (NO innerText)
@@ -124,11 +161,11 @@ body {
     font-size: 12px;
     line-height: 1.9;
     letter-spacing: 0.02em;
-    text-shadow: 0 0 8px rgba(74, 222, 128, 0.55);
-    border: 1px solid rgba(74, 222, 128, 0.2);
+    text-shadow: 0 0 8px rgba(74,222,128,0.55);
+    border: 1px solid rgba(74,222,128,0.2);
     min-height: 150px;
 
-    /* ★ CRÍTICO: preservar saltos de línea */
+    /* ★ CRÍTICO: pre-wrap preserva \n como saltos de línea */
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -137,31 +174,42 @@ body {
     animation: terminalGlow 2.5s ease-in-out infinite;
 }
 
-/* ─── TERMINAL CURSOR ─────────────────────────────────────────── */
+/* ★ Estado caótico del terminal (se activa con JS) */
+#prank-text.chaos-mode {
+    color: #ff4d4d;
+    text-shadow: 0 0 10px rgba(255,77,77,0.7), 0 0 20px rgba(255,0,0,0.4);
+    border-color: rgba(255,77,77,0.4);
+    animation: terminalChaos 0.4s ease-in-out infinite;
+}
+#prank-screen.chaos-mode .animate-spin-slow {
+    animation: spin 0.5s linear infinite; /* gira más rápido */
+    filter: hue-rotate(180deg);           /* se vuelve rojo */
+}
+
+/* ─── TERMINAL CURSOR ───────────────────────────────────────────── */
 .terminal-cursor::after {
     content: '▋';
     animation: blink 0.75s step-end infinite;
     color: #4ade80;
-    text-shadow: 0 0 6px rgba(74, 222, 128, 0.9);
+    text-shadow: 0 0 6px rgba(74,222,128,0.9);
 }
 
-/* ─── PROGRESS BAR ────────────────────────────────────────────── */
+/* ─── PROGRESS BAR ──────────────────────────────────────────────── */
 .progress-glow {
     background: linear-gradient(90deg, #ef4444 0%, #f97316 55%, #fbbf24 100%);
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.65);
+    box-shadow: 0 0 12px rgba(239,68,68,0.65);
     transition: width 0.04s linear;
     position: relative; border-radius: 999px;
 }
 .progress-glow::after {
     content: '';
-    position: absolute; right:0; top:0; bottom:0;
-    width: 22px;
+    position: absolute; right:0; top:0; bottom:0; width:22px;
     background: rgba(255,255,255,0.45);
     filter: blur(5px);
     border-radius: 0 999px 999px 0;
 }
 
-/* ─── FINAL MESSAGE ───────────────────────────────────────────── */
+/* ─── FINAL MESSAGE BOX ─────────────────────────────────────────── */
 .final-message-box { position: relative; }
 .final-message-box::before {
     content: '"';
@@ -170,31 +218,25 @@ body {
     font-family: Georgia, serif; line-height: 1; pointer-events: none;
 }
 
-/* ─── GAME CARD ───────────────────────────────────────────────── */
+/* ─── GAME CARD ─────────────────────────────────────────────────── */
 .game-card {
     background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
     border: 1.5px solid #e2e8f0;
 }
 
-/* ─── GAME TAP BUTTON ─────────────────────────────────────────── */
+/* ─── GAME TAP BUTTON ───────────────────────────────────────────── */
 .game-tap-btn {
     display: block;
     transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
     -webkit-tap-highlight-color: transparent;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
 }
-.game-tap-btn:active,
-.game-tap-active {
-    transform: scale(0.72) rotate(-10deg) !important;
-}
+.game-tap-active { transform: scale(0.70) rotate(-12deg) !important; }
 
-/* ─── BTN NO FUGITIVO ─────────────────────────────────────────── */
+/* ─── BTN NO FUGITIVO ───────────────────────────────────────────── */
 #btn-no {
     transition: all 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    cursor: pointer;
-    position: absolute;
+    cursor: pointer; position: absolute;
 }
 .btn-no-surrender {
     transition: all 0.4s ease !important;
@@ -202,25 +244,26 @@ body {
     border: 2px solid #f9a8d4 !important;
 }
 
-/* ─── STATS TRIGGER ───────────────────────────────────────────── */
+/* ─── STATS TRIGGER ─────────────────────────────────────────────── */
 .stats-trigger { transition: color 0.3s; user-select: none; -webkit-user-select: none; }
 
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════
    KEYFRAMES
-   ═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════════ */
 
+/* Shake principal */
 @keyframes shake {
-    0%   { transform: translate(2px,  1px)  rotate(0deg);   }
-    10%  { transform: translate(-2px,-2px)  rotate(-1.5deg);}
-    20%  { transform: translate(-3px, 0px)  rotate(1deg);   }
-    30%  { transform: translate(0px,  2px)  rotate(0deg);   }
-    40%  { transform: translate(1px, -1px)  rotate(1.5deg); }
-    50%  { transform: translate(-2px, 2px)  rotate(-1deg);  }
-    60%  { transform: translate(-3px, 1px)  rotate(0deg);   }
-    70%  { transform: translate(3px,  1px)  rotate(-1.5deg);}
-    80%  { transform: translate(-2px,-1px)  rotate(1deg);   }
-    90%  { transform: translate(2px,  2px)  rotate(0deg);   }
-    100% { transform: translate(1px, -2px)  rotate(-1deg);  }
+    0%   { transform: translate(2px, 1px)   rotate(0deg);    }
+    10%  { transform: translate(-2px,-2px)  rotate(-1.5deg); }
+    20%  { transform: translate(-3px, 0px)  rotate(1deg);    }
+    30%  { transform: translate(0px,  2px)  rotate(0deg);    }
+    40%  { transform: translate(1px, -1px)  rotate(1.5deg);  }
+    50%  { transform: translate(-2px, 2px)  rotate(-1deg);   }
+    60%  { transform: translate(-3px, 1px)  rotate(0deg);    }
+    70%  { transform: translate(3px,  1px)  rotate(-1.5deg); }
+    80%  { transform: translate(-2px,-1px)  rotate(1deg);    }
+    90%  { transform: translate(2px,  2px)  rotate(0deg);    }
+    100% { transform: translate(1px, -2px)  rotate(-1deg);   }
 }
 
 @keyframes spin {
@@ -250,11 +293,11 @@ body {
 }
 
 @keyframes heartbeat {
-    0%,100% { transform: scale(1);   }
-    14%     { transform: scale(1.2); }
-    28%     { transform: scale(1);   }
-    42%     { transform: scale(1.14);}
-    70%     { transform: scale(1);   }
+    0%,100% { transform: scale(1);    }
+    14%     { transform: scale(1.20); }
+    28%     { transform: scale(1);    }
+    42%     { transform: scale(1.14); }
+    70%     { transform: scale(1);    }
 }
 
 @keyframes float {
@@ -262,19 +305,22 @@ body {
     50%     { transform: translateY(-9px); }
 }
 
+/* Brillo suave del terminal (modo normal) */
 @keyframes terminalGlow {
     0%,100% { box-shadow: 0 0 6px  rgba(74,222,128,0.2),  inset 0 0 8px  rgba(74,222,128,0.05); }
     50%     { box-shadow: 0 0 20px rgba(74,222,128,0.45), inset 0 0 18px rgba(74,222,128,0.12); }
 }
 
-@keyframes tapPulse {
-    0%   { transform: scale(1);    }
-    30%  { transform: scale(0.72) rotate(-12deg); }
-    60%  { transform: scale(1.12) rotate(4deg);  }
-    100% { transform: scale(1);    }
+/* Brillo rojo caótico (modo chaos) */
+@keyframes terminalChaos {
+    0%   { box-shadow: 0 0 10px rgba(255,50,50,0.6),  inset 0 0 15px rgba(255,0,0,0.1);  border-color: rgba(255,77,77,0.5); }
+    25%  { box-shadow: 0 0 25px rgba(255,150,0,0.5),  inset 0 0 20px rgba(255,100,0,0.1); border-color: rgba(255,150,0,0.5); }
+    50%  { box-shadow: 0 0 15px rgba(255,50,50,0.7),  inset 0 0 12px rgba(255,0,0,0.15); border-color: rgba(255,50,50,0.7); }
+    75%  { box-shadow: 0 0 30px rgba(200,0,200,0.4),  inset 0 0 20px rgba(200,0,200,0.08); border-color: rgba(200,0,200,0.5); }
+    100% { box-shadow: 0 0 10px rgba(255,50,50,0.6),  inset 0 0 15px rgba(255,0,0,0.1);  border-color: rgba(255,77,77,0.5); }
 }
 
-/* ─── CLASES DE ANIMACIÓN ─────────────────────────────────────── */
+/* ─── CLASES ─────────────────────────────────────────────────────── */
 .shake-heavy       { animation: shake      0.09s infinite; }
 .animate-spin-slow { animation: spin       3.5s linear infinite; }
 .gift-bounce       { animation: giftBounce 2s ease-in-out infinite; }
@@ -283,16 +329,17 @@ body {
 .heartbeat         { animation: heartbeat  1.9s ease-in-out infinite; }
 .float-anim        { animation: float      3s ease-in-out infinite; }
 
-/* ─── SCREEN ANIMATIONS ───────────────────────────────────────── */
+/* ─── SCREEN ANIMATIONS ──────────────────────────────────────────── */
 #result-area:not(.hidden)   { animation: fadeInUp 0.4s ease-out; }
 #final-screen:not(.hidden)  { animation: fadeInUp 0.5s ease-out; }
 #celebrate-msg:not(.hidden) { animation: fadeInUp 0.4s ease-out; }
 #tap-done-msg:not(.hidden)  { animation: fadeInUp 0.4s ease-out; }
 #hug-done-msg:not(.hidden)  { animation: fadeInUp 0.4s ease-out; }
 
-/* ─── RESPONSIVE ──────────────────────────────────────────────── */
+/* ─── RESPONSIVE ─────────────────────────────────────────────────── */
 @media (max-width: 500px) {
-    .card-main { padding: 1.5rem; border-radius: 2rem; }
+    /* ★ FIX para móvil: más padding top en la tarjeta para acentos */
+    .card-main { padding: 1.6rem 1.4rem 1.5rem; border-radius: 2rem; }
 
     #prank-text {
         font-size: 10.5px !important;
@@ -301,12 +348,10 @@ body {
         min-height: 130px !important;
     }
 
-    /* En móvil el btn-no se vuelve estático para no salirse */
+    /* En móvil el btn-no es estático */
     #btn-no-wrapper {
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        height: auto !important;
-        overflow: visible;
+        flex-wrap: wrap; gap: 0.75rem;
+        height: auto !important; overflow: visible;
     }
     #btn-no {
         position: relative !important;
@@ -314,7 +359,7 @@ body {
         transform: none !important;
     }
 
-    .creator-title { font-size: 1.55rem; }
+    .creator-title { font-size: 1.55rem; line-height: 1.1; }
     .music-btn     { width: 38px; height: 38px; font-size: 1rem; }
 }
 
@@ -323,7 +368,7 @@ body {
     #prank-text { font-size: 9.5px !important; }
 }
 
-/* ─── SCROLLBAR ───────────────────────────────────────────────── */
+/* ─── SCROLLBAR ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
 ::-webkit-scrollbar-thumb { background: #f9a8d4; border-radius: 3px; }
