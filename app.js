@@ -1,201 +1,447 @@
-/* ============================================================
-   app.js — Sorpresa Especial 💝
-   Versión 2.0 — Todos los bugs corregidos + mejoras completas
-   ============================================================ */
+/* ================================================================
+   app.js — Sorpresa Especial 💝  v3.0
+   Fixes: terminal text, per-category messages, sounds via WebAudio,
+          language receiver-side, btn-no surrender, celebrate inline.
+   ================================================================ */
 
-// ─── CONFIG & TRANSLATIONS ──────────────────────────────────
-
+// ───────────────────────────────────────────────────────────
+// CONFIG / TRANSLATIONS
+// ───────────────────────────────────────────────────────────
 const config = {
     es: {
         categories: {
-            amistad: "Amistad 🤝",
-            amor:    "Amor ❤️",
-            familiar: "Familiar 🏠"
+            amistad:  'Amistad 🤝',
+            amor:     'Amor ❤️',
+            familiar: 'Familiar 🏠'
         },
         sub: {
-            amistad:  ["Amigo/a", "Mejor Amigo/a", "Cómplice", "Hermano/a del alma"],
-            amor:     ["Crush", "Pareja", "Novio/a", "Amor Platónico", "Esposa/o"],
-            familiar: ["Mamá", "Papá", "Hermano/a", "Tío/a", "Primo/a", "Abuela/o"]
+            amistad:  ['Amigo/a', 'Mejor Amigo/a', 'Cómplice', 'Hermano/a del alma'],
+            amor:     ['Crush', 'Pareja', 'Novio/a', 'Amor Platónico', 'Esposa/o'],
+            familiar: ['Mamá', 'Papá', 'Hermano/a', 'Tío/a', 'Primo/a', 'Abuela/o']
         },
-        // TEXTOS DE TROLLEO — con \n para saltos de línea (requiere whitespace-pre-line)
+
+        // Texto de trolleo por categoría (los \n son saltos de línea reales gracias a pre-wrap)
         trolleos: {
-            amistad:  "> SISTEMA: Analizando historial de mensajes...\n> Accediendo a galería de fotos borradas...\n> Subiendo pack vergonzoso a Instagram Stories... 📸\n> Enviando capturas a todos tus contactos...\n> ¡Encontrado: 47 archivos comprometedores!\n> Estado: SUBIENDO... 100% COMPLETO ✓",
-            amor:     "> ALERTA: Nueva solicitud de matrimonio en proceso...\n> Destinatario: todos tus ex... 💘\n> Mensaje: 'Me gustas, ¿quieres ser mi novio/a?'\n> Notificando a tus padres... 👨‍👩‍👧\n> Reservando lugar para la boda... 💍\n> Estado: ENVIADO A 12 PERSONAS ✓",
-            familiar: "> SISTEMA: Detectada deuda de abrazos acumulada...\n> Calculando factura de crianza pendiente: $500,000 USD... 💸\n> Notificando a la Agencia Tributaria...\n> Desactivando acceso a Netflix y WiFi...\n> Enviando historial de búsqueda sospechoso a [Familiar]...\n> Estado: BLOQUEADO ⚠️"
+            amistad: [
+                '> SISTEMA: Analizando historial de mensajes...',
+                '> Accediendo a galería de fotos borradas...',
+                '> Subiendo pack vergonzoso a Instagram Stories... 📸',
+                '> Enviando capturas a TODOS tus contactos...',
+                '> ¡Encontrado: 47 archivos comprometedores!',
+                '> Estado: SUBIENDO... ████████ 100% COMPLETO ✓'
+            ].join('\n'),
+            amor: [
+                '> ALERTA: Nueva solicitud de matrimonio en proceso...',
+                '> Destinatarios: todos tus ex... 💘',
+                '> Mensaje: "Me gustas, ¿quieres ser mi novio/a?"',
+                '> Notificando a tus padres... 👨‍👩‍👧',
+                '> Reservando lugar para la boda... 💍',
+                '> Estado: ENVIADO A 12 PERSONAS ✓'
+            ].join('\n'),
+            familiar: [
+                '> SISTEMA: Detectada deuda de abrazos acumulada...',
+                '> Calculando factura de crianza pendiente: $500,000 USD 💸',
+                '> Notificando a la Agencia Tributaria...',
+                '> Desactivando acceso a Netflix y WiFi...',
+                '> Enviando historial sospechoso al remitente...',
+                '> Estado: BLOQUEADO ⚠️'
+            ].join('\n')
         },
-        final: "¡Te asustaste! 😂 Es broma. Solo quería decirte que eres una persona increíble, y que me alegra muchísimo tenerte en mi vida. ¡Te quiero mucho! ❤️",
-        tapTitle:  "Tienes una sorpresa",
-        tapSub:    "Alguien pensó en ti hoy 💕",
-        tapBtn:    "¡Abrir! 💝",
-        question:  "¿Me perdonas la broma? 🥺",
-        yes:       "Sí ❤️",
-        noBtn:     "NO",
-        celebrate: "¡Lo sabía! ❤️",
-        greeting:  "¡Para mi {sub}!",
-        shareBtn:  "💌 ¡Quiero enviarle esto a alguien!",
-        shareSub:  "Crea tu propia sorpresa personalizada →",
-        donation:  "⚠️ ERROR DE TRANSACCIÓN:\n\nEl sistema de pagos se ha bloqueado porque el programador aún no tiene edad legal para tener cuenta bancaria.\n\n¡Mejor regálale un chocolate! 🍫🍭",
-        copied:    "¡COPIADO! ✓",
-        statsResult: "📊 STATS — Sorpresa Especial\n\n🔗 Links generados: {links}\n🎭 Bromas exitosas:  {visitas}\n\n¡Sigue compartiéndolo! 💪",
-        statsError: "No se pudieron cargar las estadísticas.\n(CountAPI puede estar temporalmente caída)",
+
+        // Mensajes finales DIFERENTES por categoría
+        final: {
+            amistad:  '¡Te asustaste! 😂 Era solo una broma. Quería decirte que gracias por estar siempre ahí, por aguantarme y por ser el mejor cómplice que existe. La amistad como la tuya no tiene precio. ¡Te quiero muchísimo! 🤝❤️',
+            amor:     '¡Casi te da un infarto! 😜 Era solo una broma, amor. Solo quería recordarte que eres increíblemente especial para mí, y que tenerte hace que todo valga la pena. ¡Feliz 14! 💕',
+            familiar: '¡Te asustamos! 😅 Tranquilo/a, es una broma. La verdad es que no hay dinero que pague todo lo que has dado por mí. Solo quería recordarte cuánto te quiero y lo importante que eres en mi vida. ❤️🏠'
+        },
+
+        tapTitle:  'Tienes una sorpresa',
+        tapSub:    'Alguien pensó en ti hoy 💕',
+        tapBtn:    '¡Abrir! 💝',
+        tapHint:   '🔊 Activa el sonido para la experiencia completa',
+        question:  '¿Me perdonas la broma? 🥺',
+        yesBtn:    'Sí ❤️',
+        noBtn:     'NO',
+        noSurrender: '💕 ¡Yo también!',
+        celebrateText: '¡Lo sabía!',
+        celebrateSub:  '¡Gracias por perdonarme! Te quiero mucho ❤️',
+        greeting:  '¡Para mi {sub}!',
+        shareBtn:  '💌 ¡Quiero enviarle esto a alguien!',
+        shareSub:  'Crea tu propia sorpresa personalizada →',
+        donation:  '⚠️ ERROR DE TRANSACCIÓN:\n\nEl sistema de pagos se ha bloqueado porque el programador aún no tiene edad legal para tener cuenta bancaria.\n\n¡Mejor regálale un chocolate! 🍫🍭',
+        copied:    '¡COPIADO! ✓',
+        statsResult: '📊 STATS — Sorpresa Especial\n\n🔗 Links generados: {links}\n🎭 Bromas exitosas:  {visitas}\n\n¡Sigue compartiéndolo! 💪',
+        statsError: 'No se pudieron cargar las estadísticas.\n(CountAPI puede estar temporalmente caída)',
         ui: {
-            title:       "MENSAJERÍA VIP",
-            desc:        "Personaliza tu envío 💝",
-            gen:         "Generar Link 🚀",
-            relLabel:    "Tipo de relación",
-            destLabel:   "¿Para quién es?",
-            msgLabel:    "Tu mensaje especial",
-            msgHolder:   "Escribe algo especial para esa persona... 💕",
-            copy:        "COPIAR",
-            resultLabel: "✅ ¡Tu link está listo! Cópialo y envíalo:"
+            title:    'MENSAJERÍA VIP',
+            desc:     'Personaliza tu envío 💝',
+            gen:      'Generar Link 🚀',
+            rel:      'Tipo de relación',
+            dest:     '¿Para quién es?',
+            msg:      'Tu mensaje especial',
+            msgOpt:   '✨ Opcional — puedes dejarlo en blanco',
+            msgHint:  '💡 Si lo dejas vacío se enviará un mensaje bonito por defecto',
+            msgHolder:'Escribe algo especial para esa persona... 💕',
+            copy:     'COPIAR',
+            result:   '✅ ¡Tu link está listo! Cópialo y envíalo:'
         }
     },
+
     en: {
         categories: {
-            amistad:  "Friendship 🤝",
-            amor:     "Love ❤️",
-            familiar: "Family 🏠"
+            amistad:  'Friendship 🤝',
+            amor:     'Love ❤️',
+            familiar: 'Family 🏠'
         },
         sub: {
-            amistad:  ["Friend", "Best Friend", "Partner in crime", "Soul sibling"],
-            amor:     ["Crush", "Partner", "Boyfriend/Girlfriend", "Soulmate", "Spouse"],
-            familiar: ["Mom", "Dad", "Sibling", "Uncle/Aunt", "Cousin", "Grandma/pa"]
+            amistad:  ['Friend', 'Best Friend', 'Partner in crime', 'Soul sibling'],
+            amor:     ['Crush', 'Partner', 'Boyfriend/Girlfriend', 'Soulmate', 'Spouse'],
+            familiar: ['Mom', 'Dad', 'Sibling', 'Uncle/Aunt', 'Cousin', 'Grandma/pa']
         },
         trolleos: {
-            amistad:  "> SYSTEM: Scanning message history...\n> Accessing deleted photo gallery...\n> Uploading embarrassing pack to Instagram Stories... 📸\n> Sending screenshots to all your contacts...\n> Found: 47 compromising files!\n> Status: UPLOADING... 100% COMPLETE ✓",
-            amor:     "> ALERT: New marriage proposal in progress...\n> Recipients: all your exes... 💘\n> Message: 'I like you, will you be mine?'\n> Notifying your parents... 👨‍👩‍👧\n> Booking wedding venue... 💍\n> Status: SENT TO 12 PEOPLE ✓",
-            familiar: "> SYSTEM: Accumulated hug debt detected...\n> Calculating outstanding parenting bill: $500,000 USD... 💸\n> Notifying the IRS...\n> Blocking Netflix and WiFi access...\n> Sending suspicious search history to [Family member]...\n> Status: LOCKED ⚠️"
+            amistad: [
+                '> SYSTEM: Scanning message history...',
+                '> Accessing deleted photo gallery...',
+                '> Uploading embarrassing pack to Instagram Stories... 📸',
+                '> Sending screenshots to ALL your contacts...',
+                '> Found: 47 compromising files!',
+                '> Status: UPLOADING... ████████ 100% COMPLETE ✓'
+            ].join('\n'),
+            amor: [
+                '> ALERT: New marriage proposal in progress...',
+                '> Recipients: all your exes... 💘',
+                '> Message: "I like you, will you be mine?"',
+                '> Notifying your parents... 👨‍👩‍👧',
+                '> Booking wedding venue... 💍',
+                '> Status: SENT TO 12 PEOPLE ✓'
+            ].join('\n'),
+            familiar: [
+                '> SYSTEM: Accumulated hug debt detected...',
+                '> Calculating parenting bill: $500,000 USD 💸',
+                '> Notifying the IRS...',
+                '> Blocking Netflix and WiFi access...',
+                '> Sending suspicious history to sender...',
+                '> Status: LOCKED ⚠️'
+            ].join('\n')
         },
-        final: "Gotcha! 😂 Just kidding! I just wanted to say you're an amazing person and I'm so glad to have you in my life. I love you! ❤️",
-        tapTitle:  "You have a surprise",
-        tapSub:    "Someone was thinking of you today 💕",
-        tapBtn:    "Open it! 💝",
-        question:  "Do you forgive me for the prank? 🥺",
-        yes:       "Yes ❤️",
-        noBtn:     "NO",
-        celebrate: "I knew it! ❤️",
-        greeting:  "To my {sub}!",
-        shareBtn:  "💌 I want to send this to someone!",
-        shareSub:  "Create your own personalized surprise →",
-        donation:  "⚠️ TRANSACTION ERROR:\n\nThe payment system is locked because the developer is not legally old enough to have a bank account.\n\nSend chocolate instead! 🍫🍭",
-        copied:    "COPIED! ✓",
-        statsResult: "📊 STATS — Special Surprise\n\n🔗 Links generated: {links}\n🎭 Successful pranks: {visitas}\n\nKeep sharing it! 💪",
-        statsError: "Could not load stats.\n(CountAPI may be temporarily down)",
+        final: {
+            amistad:  'Gotcha! 😂 Just a prank! I wanted to say that I am so grateful to have you in my life. Your friendship means everything to me. I love you tons! 🤝❤️',
+            amor:     'Almost got you! 😜 It was just a joke, my love! I just wanted to remind you how incredibly special you are to me. Happy Valentine\'s Day! 💕',
+            familiar: 'We got you! 😅 Relax, it was a prank! There is no way to repay everything you have done for me. I just want you to know how much I love you. ❤️🏠'
+        },
+        tapTitle:  'You have a surprise',
+        tapSub:    'Someone was thinking of you today 💕',
+        tapBtn:    'Open it! 💝',
+        tapHint:   '🔊 Turn on sound for the full experience',
+        question:  'Do you forgive me for the prank? 🥺',
+        yesBtn:    'Yes ❤️',
+        noBtn:     'NO',
+        noSurrender: '💕 I love you too!',
+        celebrateText: 'I knew it!',
+        celebrateSub:  'Thanks for forgiving me! I love you! ❤️',
+        greeting:  'For my {sub}!',
+        shareBtn:  '💌 I want to send this to someone!',
+        shareSub:  'Create your own personalized surprise →',
+        donation:  '⚠️ TRANSACTION ERROR:\n\nThe payment system is locked because the developer is not legally old enough to have a bank account.\n\nSend chocolate instead! 🍫🍭',
+        copied:    'COPIED! ✓',
+        statsResult: '📊 STATS — Special Surprise\n\n🔗 Links generated: {links}\n🎭 Successful pranks: {visitas}\n\nKeep sharing it! 💪',
+        statsError: 'Could not load stats.\n(CountAPI may be temporarily down)',
         ui: {
-            title:       "VIP MESSAGING",
-            desc:        "Customize your gift 💝",
-            gen:         "Generate Link 🚀",
-            relLabel:    "Relationship type",
-            destLabel:   "Who is it for?",
-            msgLabel:    "Your special message",
-            msgHolder:   "Write something special for this person... 💕",
-            copy:        "COPY",
-            resultLabel: "✅ Your link is ready! Copy and send it:"
+            title:    'VIP MESSAGING',
+            desc:     'Customize your gift 💝',
+            gen:      'Generate Link 🚀',
+            rel:      'Relationship type',
+            dest:     'Who is it for?',
+            msg:      'Your special message',
+            msgOpt:   '✨ Optional — you can leave it blank',
+            msgHint:  '💡 If blank, a beautiful default message will be used',
+            msgHolder:'Write something special for this person... 💕',
+            copy:     'COPY',
+            result:   '✅ Your link is ready! Copy and send it:'
         }
     }
 };
 
-// ─── STATE ──────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────
+// STATE
+// ───────────────────────────────────────────────────────────
+let currentLang  = 'es';
+let audioCtx     = null;
+let audioUnlocked = false;
+let statsClicks  = 0;
+let statsTimer   = null;
+let noEscapes    = 0;
+let noLastTime   = 0;
+const MAX_ESCAPES = 5;
 
-let currentLang    = 'es';
-let audioError     = null;
-let audioSuccess   = null;
-let audioReady     = false;
-let statsClicks    = 0;
-let statsTimer     = null;
-
-// ─── COUNT API ──────────────────────────────────────────────
-// Namespace: sorpresa-naofomi | Keys: visitas-prank, links-generados
-
+// ───────────────────────────────────────────────────────────
+// COUNT API
+// ───────────────────────────────────────────────────────────
 const NS = 'sorpresa-naofomi';
 
 async function hitCounter(key) {
     try {
-        const res = await fetch(`https://api.countapi.xyz/hit/${NS}/${key}`);
-        const data = await res.json();
-        return data.value ?? null;
+        const r = await fetch(`https://api.countapi.xyz/hit/${NS}/${key}`);
+        return (await r.json()).value ?? null;
     } catch (_) { return null; }
 }
-
 async function getCounter(key) {
     try {
-        const res = await fetch(`https://api.countapi.xyz/get/${NS}/${key}`);
-        const data = await res.json();
-        return data.value ?? 0;
+        const r = await fetch(`https://api.countapi.xyz/get/${NS}/${key}`);
+        return (await r.json()).value ?? 0;
     } catch (_) { return '—'; }
 }
 
-// ─── AUDIO ──────────────────────────────────────────────────
-
-function initAudio() {
-    if (audioReady) return;
-    try {
-        // Sonido de error para el susto
-        audioError = new Audio('https://www.myinstants.com/media/sounds/erro.mp3');
-        audioError.volume = 0.55;
-        // Sonido de revelación
-        audioSuccess = new Audio('https://www.myinstants.com/media/sounds/ta-da.mp3');
-        audioSuccess.volume = 0.6;
-        // Pre-cargar en silencio (necesita interacción del usuario primero)
-        audioError.load();
-        audioSuccess.load();
-        audioReady = true;
-    } catch (e) {
-        console.warn('Audio init failed:', e);
+// ───────────────────────────────────────────────────────────
+// WEB AUDIO ENGINE  (sin URLs externas → siempre funciona)
+// ───────────────────────────────────────────────────────────
+function getAudioCtx() {
+    if (!audioCtx) {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (_) {}
     }
+    return audioCtx;
 }
 
-function safePlay(audio) {
-    if (!audio || !audioReady) return;
+// Llamar DENTRO de un click/touch para desbloquear el contexto
+function unlockAudio() {
+    if (audioUnlocked) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    // Resume si estaba suspendido (política de autoplay)
+    if (ctx.state === 'suspended') ctx.resume();
+    audioUnlocked = true;
+}
+
+// Clic de teclado (durante escritura)
+function playKeyClick() {
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
     try {
-        audio.currentTime = 0;
-        const promise = audio.play();
-        if (promise !== undefined) {
-            promise.catch(() => { /* autoplay bloqueado — silencioso */ });
+        const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.035), ctx.sampleRate);
+        const d   = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2) * 0.35;
         }
+        const src  = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        src.buffer = buf;
+        src.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.value = 0.18;
+        src.start();
     } catch (_) {}
 }
 
-// ─── LANGUAGE ───────────────────────────────────────────────
+// Alarma de susto (al 55% de la barra)
+function playAlarm() {
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
+    try {
+        const t = ctx.currentTime;
+        [0, 0.22, 0.44, 0.66].forEach(off => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(880, t + off);
+            osc.frequency.exponentialRampToValueAtTime(220, t + off + 0.18);
+            gain.gain.setValueAtTime(0.25, t + off);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + off + 0.18);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t + off);
+            osc.stop(t + off + 0.18);
+        });
+    } catch (_) {}
+}
 
+// Fanfarria de revelación (arpeggio mayor)
+function playFanfare() {
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
+    try {
+        const t = ctx.currentTime;
+        // Do mayor: C5 E5 G5 C6
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+            // Nota principal (sine suave)
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0,    t + i * 0.11);
+            gain.gain.linearRampToValueAtTime(0.22, t + i * 0.11 + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.11 + 0.55);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t + i * 0.11);
+            osc.stop(t + i * 0.11 + 0.55);
+
+            // Armónico (triangle, más suave)
+            const osc2  = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.value = freq * 2;
+            gain2.gain.setValueAtTime(0,    t + i * 0.11);
+            gain2.gain.linearRampToValueAtTime(0.07, t + i * 0.11 + 0.03);
+            gain2.gain.exponentialRampToValueAtTime(0.001, t + i * 0.11 + 0.35);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(t + i * 0.11);
+            osc2.stop(t + i * 0.11 + 0.35);
+        });
+    } catch (_) {}
+}
+
+// Pop suave (al generar link / copiar)
+function playPop() {
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
+    try {
+        const t = ctx.currentTime;
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.exponentialRampToValueAtTime(200, t + 0.12);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.12);
+    } catch (_) {}
+}
+
+// Ding de confirmación (al copiar)
+function playDing() {
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
+    try {
+        const t = ctx.currentTime;
+        [880, 1320].forEach((freq, i) => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0,    t + i * 0.08);
+            gain.gain.linearRampToValueAtTime(0.18, t + i * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t + i * 0.08);
+            osc.stop(t + i * 0.08 + 0.4);
+        });
+    } catch (_) {}
+}
+
+// Clic del botón NO escapando
+function playEscapeSound() {
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
+    try {
+        const t = ctx.currentTime;
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, t);
+        osc.frequency.exponentialRampToValueAtTime(800, t + 0.06);
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.06);
+    } catch (_) {}
+}
+
+// ───────────────────────────────────────────────────────────
+// LANGUAGE
+// ───────────────────────────────────────────────────────────
 function changeLang(lang) {
     currentLang = lang;
     const t  = config[lang];
     const ui = t.ui;
 
-    // Actualizar clases de botones de idioma
+    // Botones de idioma
     document.getElementById('btn-lang-es').classList.toggle('active', lang === 'es');
     document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
 
-    // Textos del creator
-    document.getElementById('ui-title').innerText = ui.title;
-    document.getElementById('ui-desc').innerText  = ui.desc;
-    document.getElementById('lbl-rel').innerText  = ui.relLabel;
-    document.getElementById('lbl-dest').innerText = ui.destLabel;
-    document.getElementById('lbl-msg').innerText  = ui.msgLabel;
-    document.getElementById('custom-message').placeholder = ui.msgHolder;
-    document.getElementById('btn-generate').innerText = ui.gen;
+    // ── Actualizar CREATOR VIEW ──
+    const creatorView = document.getElementById('creator-view');
+    if (creatorView) {
+        document.getElementById('ui-title').textContent    = ui.title;
+        document.getElementById('ui-desc').textContent     = ui.desc;
+        document.getElementById('lbl-rel').textContent     = ui.rel;
+        document.getElementById('lbl-dest').textContent    = ui.dest;
+        document.getElementById('lbl-msg').textContent     = ui.msg;
+        document.getElementById('lbl-opt').textContent     = ui.msgOpt;
+        document.getElementById('lbl-hint').textContent    = ui.msgHint;
+        document.getElementById('custom-message').placeholder = ui.msgHolder;
+        document.getElementById('btn-generate').textContent = ui.gen;
+        const rLabel = document.getElementById('lbl-result');
+        if (rLabel) rLabel.textContent = ui.result;
+        const btnCopy = document.getElementById('btn-copy');
+        if (btnCopy && btnCopy.textContent !== (config[currentLang].copied || ui.copy)) {
+            btnCopy.textContent = ui.copy;
+        }
 
-    // Reconstruir select de categorías
-    const catSel = document.getElementById('main-category');
-    catSel.innerHTML = '';
-    for (const key in t.categories) {
-        catSel.add(new Option(t.categories[key], key));
+        // Reconstruir categorías
+        const catSel = document.getElementById('main-category');
+        catSel.innerHTML = '';
+        for (const key in t.categories) {
+            catSel.add(new Option(t.categories[key], key));
+        }
+        updateSubCats();
     }
 
-    updateSubCats();
+    // ── Actualizar RECEIVER VIEW si está visible ──
+    const receiverView = document.getElementById('receiver-view');
+    if (receiverView && !receiverView.classList.contains('hidden')) {
+        // Tap overlay
+        const tapTitle = document.getElementById('tap-title');
+        const tapSub   = document.getElementById('tap-sub');
+        const tapBtn   = document.getElementById('tap-btn');
+        const tapHint  = document.getElementById('tap-hint');
+        if (tapTitle) tapTitle.textContent = t.tapTitle;
+        if (tapSub)   tapSub.textContent   = t.tapSub;
+        if (tapBtn)   tapBtn.textContent   = t.tapBtn;
+        if (tapHint)  tapHint.textContent  = t.tapHint;
+
+        // Final screen
+        const qText    = document.getElementById('question-text');
+        const yesBtn   = document.getElementById('btn-yes');
+        const shareBtn = document.getElementById('btn-share');
+        const shareSub = document.getElementById('share-sub');
+        const celText  = document.getElementById('celebrate-text');
+        const celSub   = document.getElementById('celebrate-sub');
+        if (qText)    qText.textContent    = t.question;
+        if (yesBtn)   yesBtn.textContent   = t.yesBtn;
+        if (shareBtn) shareBtn.textContent = t.shareBtn;
+        if (shareSub) shareSub.textContent = t.shareSub;
+        if (celText)  celText.textContent  = t.celebrateText;
+        if (celSub)   celSub.textContent   = t.celebrateSub;
+
+        // Actualizar el btn-no solo si aún no ha capitulado
+        const btnNo = document.getElementById('btn-no');
+        if (btnNo && !btnNo.classList.contains('btn-no-surrender')) {
+            btnNo.textContent = t.noBtn;
+        }
+    }
 }
 
 function updateSubCats() {
     const cat    = document.getElementById('main-category').value;
     const subSel = document.getElementById('sub-category');
     subSel.innerHTML = '';
-    config[currentLang].sub[cat].forEach(s => subSel.add(new Option(s, s)));
+    (config[currentLang].sub[cat] || []).forEach(s => subSel.add(new Option(s, s)));
 }
 
-// ─── LINK GENERATOR ─────────────────────────────────────────
-
+// ───────────────────────────────────────────────────────────
+// CREATOR: GENERATE LINK
+// ───────────────────────────────────────────────────────────
 function generateLink() {
+    unlockAudio();
     const c   = document.getElementById('main-category').value;
     const s   = document.getElementById('sub-category').value;
     const raw = document.getElementById('custom-message').value.trim();
@@ -203,202 +449,244 @@ function generateLink() {
     const url = `${window.location.origin}${window.location.pathname}?c=${c}&s=${encodeURIComponent(s)}&m=${m}&l=${currentLang}`;
 
     document.getElementById('final-url').value = url;
-
     const resultArea = document.getElementById('result-area');
     resultArea.classList.remove('hidden');
     resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    // Contar links generados
+    playPop();
     hitCounter('links-generados');
 }
 
 async function copyLink() {
-    const input = document.getElementById('final-url');
+    unlockAudio();
+    const text    = document.getElementById('final-url').value;
     const btnCopy = document.getElementById('btn-copy');
-    const text = input.value;
 
     try {
         await navigator.clipboard.writeText(text);
     } catch (_) {
-        // Fallback
-        input.select();
-        input.setSelectionRange(0, 99999);
-        try { document.execCommand('copy'); } catch (e2) {}
+        const inp = document.getElementById('final-url');
+        inp.select();
+        inp.setSelectionRange(0, 99999);
+        try { document.execCommand('copy'); } catch (_2) {}
     }
 
-    // Feedback visual
-    const original = btnCopy.innerText;
-    btnCopy.innerText = config[currentLang].copied || '✓';
+    playDing();
+    const orig = btnCopy.textContent;
+    btnCopy.textContent = config[currentLang].copied || '✓';
     btnCopy.classList.add('bg-green-700');
     setTimeout(() => {
-        btnCopy.innerText = original;
+        btnCopy.textContent = config[currentLang].ui.copy;
         btnCopy.classList.remove('bg-green-700');
     }, 2000);
 }
 
-// ─── RECEIVER FLOW ──────────────────────────────────────────
-
+// ───────────────────────────────────────────────────────────
+// RECEIVER: BEGIN PRANK (llamado al hacer tap)
+// ───────────────────────────────────────────────────────────
 function beginPrank() {
-    // PASO 1: Inicializar audio (se llama desde click → usuario interactuó)
-    initAudio();
+    unlockAudio(); // ← Desbloquear audio con el evento del usuario
 
-    // Ocultar overlay, mostrar pantalla de trolleo
     document.getElementById('tap-overlay').classList.add('hidden');
-    const prankScreen = document.getElementById('prank-screen');
-    prankScreen.classList.remove('hidden');
-    prankScreen.classList.add('fade-in');
+    const ps = document.getElementById('prank-screen');
+    ps.classList.remove('hidden');
+    ps.classList.add('fade-in');
 
-    // Iniciar animación de escritura
     const p = new URLSearchParams(window.location.search);
     startTyping(p);
 }
 
+// ───────────────────────────────────────────────────────────
+// TERMINAL TYPING EFFECT
+// FIX DEFINITIVO: textContent += (no innerText) + CSS pre-wrap
+// ───────────────────────────────────────────────────────────
 function startTyping(p) {
     const lang = p.get('l') || 'es';
     const cat  = p.get('c') || 'amistad';
     const msg  = config[lang].trolleos[cat] || config[lang].trolleos.amistad;
 
     const el = document.getElementById('prank-text');
-    el.innerText = '';
-    // Quitar cursor mientras escribe para reposicionarlo al final
+
+    // ★ Forzar white-space pre-wrap por JS también (garantía extra)
+    el.style.whiteSpace = 'pre-wrap';
+    el.textContent = '';
     el.classList.remove('terminal-cursor');
 
     let i = 0;
-    const speed = 28; // ms por carácter
+    let charsSinceClick = 0;
 
     const typer = setInterval(() => {
-        el.innerText += msg.charAt(i);
+        // ★ textContent (NO innerText) para preservar espacios
+        el.textContent += msg.charAt(i);
         i++;
+
+        // Sonido de teclado cada ~3 caracteres (no en espacios o saltos)
+        charsSinceClick++;
+        const ch = msg.charAt(i - 1);
+        if (charsSinceClick >= 3 && ch !== '\n' && ch !== ' ') {
+            charsSinceClick = 0;
+            playKeyClick();
+        }
+
         if (i >= msg.length) {
             clearInterval(typer);
             el.classList.add('terminal-cursor');
-            setTimeout(() => fillBar(p), 600);
+            setTimeout(() => fillBar(p), 700);
         }
-    }, speed);
+    }, 30);
 }
 
 function fillBar(p) {
-    const bar      = document.getElementById('progress-bar');
+    const bar       = document.getElementById('progress-bar');
     const container = document.getElementById('main-container');
+    const el        = document.getElementById('prank-text');
+    el.classList.remove('terminal-cursor');
     let width = 0;
 
-    // Quitar cursor al iniciar barra
-    document.getElementById('prank-text').classList.remove('terminal-cursor');
-
-    const interval = setInterval(() => {
-        width += 1;
+    const iv = setInterval(() => {
+        width++;
         bar.style.width = width + '%';
 
-        // Sonido de error al 55%
-        if (width === 55) safePlay(audioError);
-
-        // Vibración intensa al 80%
+        if (width === 55) playAlarm();
         if (width === 80) container.classList.add('shake-heavy');
 
-        // Cuando llega al 100% → revelar
         if (width >= 100) {
-            clearInterval(interval);
+            clearInterval(iv);
             container.classList.remove('shake-heavy');
             setTimeout(() => showFinal(p), 400);
         }
-    }, 45);
+    }, 40);
 }
 
 function showFinal(p) {
-    safePlay(audioSuccess);
+    playFanfare();
+    launchConfetti();
 
-    // Cambiar pantallas
     document.getElementById('prank-screen').classList.add('hidden');
-    const finalScreen = document.getElementById('final-screen');
-    finalScreen.classList.remove('hidden');
-    finalScreen.classList.add('fade-in');
+    const fs = document.getElementById('final-screen');
+    fs.classList.remove('hidden');
+    fs.classList.add('fade-in');
 
-    const lang      = p.get('l') || 'es';
-    const t         = config[lang];
-    const sub       = decodeURIComponent(p.get('s') || '');
-    const rawB64    = p.get('m');
-    let customMsg   = t.final;
+    const lang   = p.get('l') || 'es';
+    const t      = config[lang];
+    const cat    = p.get('c') || 'amistad';
+    const sub    = decodeURIComponent(p.get('s') || '');
+    const rawB64 = p.get('m');
 
-    // Decodificar mensaje personalizado
+    // Mensaje: primero custom, luego default por categoría
+    let finalMsg = t.final[cat] || t.final.amistad;
     if (rawB64) {
         try {
-            customMsg = decodeURIComponent(escape(atob(rawB64)));
-        } catch (_) { customMsg = t.final; }
+            const decoded = decodeURIComponent(escape(atob(rawB64)));
+            if (decoded.trim()) finalMsg = decoded;
+        } catch (_) {}
     }
 
-    // Si el mensaje está vacío usar el default
-    if (!customMsg.trim()) customMsg = t.final;
+    document.getElementById('final-greeting').textContent = t.greeting.replace('{sub}', sub);
+    document.getElementById('final-text').textContent     = finalMsg;
 
-    // Saludo y texto
-    document.getElementById('final-greeting').innerText = t.greeting.replace('{sub}', sub);
-    document.getElementById('final-text').innerText     = customMsg;
+    // Textos del botón compartir
+    const shareBtn = document.getElementById('btn-share');
+    const shareSub = document.getElementById('share-sub');
+    if (shareBtn) shareBtn.textContent = t.shareBtn;
+    if (shareSub) shareSub.textContent = t.shareSub;
 
-    // Botón compartir y subtexto
-    document.querySelector('[onclick="goToCreator()"]').innerText = t.shareBtn;
-    document.getElementById('share-sub').innerText = t.shareSub;
-
-    // Mostrar pregunta solo en categoría amor
-    if (p.get('c') === 'amor') {
+    // Mostrar pregunta solo en amor
+    if (cat === 'amor') {
         const qArea = document.getElementById('question-area');
         qArea.classList.remove('hidden');
-        document.getElementById('question-text').innerText = t.question;
-        document.getElementById('btn-yes').innerText       = t.yes;
-        document.getElementById('btn-no').innerText        = t.noBtn;
+        document.getElementById('question-text').textContent = t.question;
+        document.getElementById('btn-yes').textContent       = t.yesBtn;
+        document.getElementById('btn-no').textContent        = t.noBtn;
+        document.getElementById('celebrate-text').textContent = t.celebrateText;
+        document.getElementById('celebrate-sub').textContent  = t.celebrateSub;
     }
-
-    // ★ Confeti
-    launchConfetti();
 }
 
+// ───────────────────────────────────────────────────────────
+// CONFETI
+// ───────────────────────────────────────────────────────────
 function launchConfetti() {
-    // Primera oleada
-    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ['#ff4d6d','#ff85a1','#ffd6e0','#ff0054','#ffccd5'] });
-    // Segunda oleada con delay
+    const colors = ['#ff4d6d','#ff85a1','#ffd6e0','#ff0054','#ffccd5','#ffb3c1'];
+    confetti({ particleCount: 110, spread: 70, origin: { y: 0.65 }, colors });
     setTimeout(() => {
-        confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: ['#ffd6e0','#ffb3c1','#ff0054'] });
-        confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: ['#ffd6e0','#ffb3c1','#ff0054'] });
-    }, 400);
+        confetti({ particleCount: 70, angle: 60,  spread: 55, origin: { x: 0, y: 0.7 }, colors });
+        confetti({ particleCount: 70, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors });
+    }, 350);
 }
 
-// ─── BOTÓN NO FUGITIVO ───────────────────────────────────────
-
-const escapedPositions = [
-    { left: '60%',  top: '-30px' },
-    { left: '-10%', top: '20px'  },
-    { left: '55%',  top: '30px'  },
-    { left: '-15%', top: '-20px' },
-    { left: '50%',  top: '40px'  },
-    { left: '-5%',  top: '-35px' },
+// ───────────────────────────────────────────────────────────
+// BOTÓN NO FUGITIVO — capitula a los MAX_ESCAPES intentos
+// ───────────────────────────────────────────────────────────
+const ESCAPE_POSITIONS = [
+    { left: '62%',  top: '-28px' },
+    { left: '-22%', top: '22px'  },
+    { left: '58%',  top: '32px'  },
+    { left: '-18%', top: '-26px' },
+    { left: '55%',  top: '-15px' },
 ];
-let escapePosIndex = 0;
 
 function initBtnNo() {
     const btnNo = document.getElementById('btn-no');
     if (!btnNo) return;
 
-    function escape() {
-        const pos = escapedPositions[escapePosIndex % escapedPositions.length];
+    function tryEscape() {
+        // Debounce: evita doble disparo en móvil (mouseover + touchstart)
+        const now = Date.now();
+        if (now - noLastTime < 250) return;
+        noLastTime = now;
+
+        noEscapes++;
+        playEscapeSound();
+
+        if (noEscapes >= MAX_ESCAPES) {
+            // ★ El NO capitula → se convierte en botón que activa celebrate
+            const lang = (new URLSearchParams(window.location.search).get('l')) || currentLang;
+            btnNo.textContent = config[lang].noSurrender;
+            btnNo.style.cssText = '';
+            btnNo.style.position = 'relative';
+            btnNo.style.background = 'linear-gradient(135deg, #fce7f3, #fbcfe8)';
+            btnNo.style.color = '#ec4899';
+            btnNo.style.border = '2px solid #f9a8d4';
+            btnNo.style.transform = 'none';
+            btnNo.classList.add('btn-no-surrender');
+            btnNo.removeEventListener('mouseover',  tryEscape);
+            btnNo.removeEventListener('touchstart', tryEscape);
+            btnNo.onclick = celebrate;
+            return;
+        }
+
+        const pos = ESCAPE_POSITIONS[(noEscapes - 1) % ESCAPE_POSITIONS.length];
         btnNo.style.left = pos.left;
         btnNo.style.top  = pos.top;
-        escapePosIndex++;
     }
 
-    btnNo.addEventListener('mouseover',    escape);
-    btnNo.addEventListener('touchstart',   escape, { passive: true });
-    btnNo.addEventListener('touchmove',    escape, { passive: true });
+    btnNo.addEventListener('mouseover',  tryEscape);
+    btnNo.addEventListener('touchstart', tryEscape, { passive: true });
 }
 
-// ─── ACTIONS ────────────────────────────────────────────────
-
+// ───────────────────────────────────────────────────────────
+// CELEBRATE (al hacer clic en Sí o cuando NO capitula)
+// ───────────────────────────────────────────────────────────
 function celebrate() {
-    const lang = (new URLSearchParams(window.location.search).get('l')) || currentLang;
-    alert(config[lang].celebrate || '¡Lo sabía! ❤️');
+    const qArea = document.getElementById('question-area');
+
+    // Ocultar los botones, mostrar mensaje inline
+    const wrapper = document.getElementById('btn-no-wrapper');
+    if (wrapper) wrapper.style.display = 'none';
+
+    const celMsg = document.getElementById('celebrate-msg');
+    if (celMsg) celMsg.classList.remove('hidden');
+
+    playFanfare();
     launchConfetti();
-    setTimeout(() => launchConfetti(), 800);
+    setTimeout(() => launchConfetti(), 700);
 }
 
+// ───────────────────────────────────────────────────────────
+// ACCIONES GENERALES
+// ───────────────────────────────────────────────────────────
 function goToCreator() {
-    // Llevar al creador limpiando todos los parámetros URL
     window.location.href = window.location.origin + window.location.pathname;
 }
 
@@ -406,16 +694,14 @@ function showDonationJoke() {
     alert(config[currentLang].donation);
 }
 
-// ─── PANEL SECRETO DE ESTADÍSTICAS ──────────────────────────
-// Clic 5 veces en "Hecho con ❤️ · naofomi" para ver stats
-
+// ───────────────────────────────────────────────────────────
+// PANEL SECRETO DE ESTADÍSTICAS
+// Clic 5 veces en "Hecho con ❤️ amor"
+// ───────────────────────────────────────────────────────────
 function handleStatsTrigger() {
     statsClicks++;
-
-    // Resetear contador si pasan más de 2 segundos entre clics
     clearTimeout(statsTimer);
     statsTimer = setTimeout(() => { statsClicks = 0; }, 2000);
-
     if (statsClicks >= 5) {
         statsClicks = 0;
         showStats();
@@ -423,25 +709,21 @@ function handleStatsTrigger() {
 }
 
 async function showStats() {
-    const lang  = currentLang;
-    const t     = config[lang];
+    const t = config[currentLang];
     const [visitas, links] = await Promise.all([
         getCounter('visitas-prank'),
         getCounter('links-generados')
     ]);
-
     if (visitas === '—' && links === '—') {
         alert(t.statsError);
     } else {
-        const msg = t.statsResult
-            .replace('{visitas}', visitas ?? '?')
-            .replace('{links}',   links   ?? '?');
-        alert(msg);
+        alert(t.statsResult.replace('{visitas}', visitas ?? '?').replace('{links}', links ?? '?'));
     }
 }
 
-// ─── INIT ────────────────────────────────────────────────────
-
+// ───────────────────────────────────────────────────────────
+// INIT
+// ───────────────────────────────────────────────────────────
 window.onload = () => {
     const params = new URLSearchParams(window.location.search);
 
@@ -452,25 +734,27 @@ window.onload = () => {
 
         const lang = params.get('l') || 'es';
         const t    = config[lang];
-
-        // Aplicar idioma al overlay de apertura
-        document.getElementById('tap-title').innerText = t.tapTitle;
-        document.getElementById('tap-sub').innerText   = t.tapSub;
-        document.getElementById('tap-btn').innerText   = t.tapBtn;
-
-        // Actualizar lang buttons
-        document.getElementById('btn-lang-es').classList.toggle('active', lang === 'es');
-        document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
         currentLang = lang;
 
-        // ★ Contar visita al prank
+        // Textos del tap overlay
+        document.getElementById('tap-title').textContent = t.tapTitle;
+        document.getElementById('tap-sub').textContent   = t.tapSub;
+        document.getElementById('tap-btn').textContent   = t.tapBtn;
+        document.getElementById('tap-hint').textContent  = t.tapHint;
+
+        // Lang buttons
+        document.getElementById('btn-lang-es').classList.toggle('active', lang === 'es');
+        document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
+
+        // Contar visita
         hitCounter('visitas-prank');
 
-        // Inicializar botón NO fugitivo (esperamos a que esté en el DOM)
-        setTimeout(initBtnNo, 100);
+        // Inicializar btn-no
+        setTimeout(initBtnNo, 200);
 
     } else {
         // ── CREATOR MODE ──
         changeLang('es');
     }
 };
+
