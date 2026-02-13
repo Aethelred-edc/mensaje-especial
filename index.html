@@ -17,68 +17,54 @@
     <meta name="twitter:description" content="Alguien pensó en ti hoy. ¡Toca para abrir tu dedicatoria! ❤️">
     <meta name="twitter:image"       content="https://thumbs.dreamstime.com/b/d-kawaii-valentines-day-gift-box-red-ribbon-heart-shaped-candies-golden-coins-soft-pink-clouds-glowing-stars-confetti-421078191.jpg">
 
-    <!-- ===== CDNs ===== -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 
 <body class="min-h-screen flex items-center justify-center p-3 overflow-x-hidden">
 
-    <!-- ===== LANG SWITCHER ===== -->
+    <!-- LANG SWITCHER -->
     <div class="fixed top-4 right-4 z-50 flex gap-2">
-        <button onclick="changeLang('es')" id="btn-lang-es"
-            class="lang-btn active px-4 py-1.5 rounded-full text-xs font-bold transition border backdrop-blur-sm">
-            🇲🇽 ES
-        </button>
-        <button onclick="changeLang('en')" id="btn-lang-en"
-            class="lang-btn px-4 py-1.5 rounded-full text-xs font-bold transition border backdrop-blur-sm">
-            🇺🇸 EN
-        </button>
+        <button onclick="changeLang('es')" id="btn-lang-es" class="lang-btn active px-4 py-1.5 rounded-full text-xs font-bold transition border backdrop-blur-sm">🇲🇽 ES</button>
+        <button onclick="changeLang('en')" id="btn-lang-en" class="lang-btn px-4 py-1.5 rounded-full text-xs font-bold transition border backdrop-blur-sm">🇺🇸 EN</button>
     </div>
 
-    <!-- ===== CARD ===== -->
+    <!-- MUSIC TOGGLE (fixed bottom-left) -->
+    <button id="music-btn" onclick="toggleMusic()" class="music-btn fixed bottom-6 left-4 z-50" title="Música ambiental">🎵</button>
+
+    <!-- ====================================================== -->
+    <!-- MAIN CARD                                               -->
+    <!-- ====================================================== -->
     <div id="main-container" class="card-main rounded-[2.5rem] p-7 max-w-md w-full text-center relative">
 
-        <!-- ============================================================ -->
-        <!-- CREATOR VIEW                                                  -->
-        <!-- ============================================================ -->
+        <!-- ================================================== -->
+        <!-- CREATOR VIEW                                        -->
+        <!-- ================================================== -->
         <div id="creator-view">
             <div class="text-5xl mb-3 heartbeat">💝</div>
-            <h1 id="ui-title" class="creator-title text-3xl font-black text-slate-800 mb-1">MENSAJERÍA VIP</h1>
-            <p id="ui-desc" class="text-pink-500 mb-6 text-[11px] font-bold uppercase tracking-widest">Personaliza tu envío 💝</p>
+            <h1 id="ui-title"  class="creator-title text-3xl font-black text-slate-800 mb-1">MENSAJERÍA VIP</h1>
+            <p  id="ui-desc"   class="text-pink-500 mb-6 text-[11px] font-bold uppercase tracking-widest">Personaliza tu envío 💝</p>
 
             <div class="space-y-4 text-left">
-
                 <div>
                     <label id="lbl-rel" class="label-field">Tipo de relación</label>
-                    <select id="main-category" onchange="updateSubCats()"
-                        class="select-field w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium text-sm">
-                    </select>
+                    <select id="main-category" onchange="updateSubCats()" class="select-field w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium text-sm"></select>
                 </div>
-
                 <div>
                     <label id="lbl-dest" class="label-field">¿Para quién es?</label>
-                    <select id="sub-category"
-                        class="select-field w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium text-sm">
-                    </select>
+                    <select id="sub-category" class="select-field w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-pink-400 transition font-medium text-sm"></select>
                 </div>
-
                 <div>
                     <div class="flex items-baseline justify-between mb-1">
                         <label id="lbl-msg" class="label-field mb-0">Tu mensaje especial</label>
-                        <span id="lbl-opt" class="optional-badge">✨ Opcional — puedes dejarlo en blanco</span>
+                        <span id="lbl-opt" class="optional-badge">✨ Opcional</span>
                     </div>
-                    <textarea id="custom-message" rows="3"
-                        class="w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl resize-none outline-none focus:border-pink-400 transition text-sm leading-relaxed">
-                    </textarea>
-                    <p id="lbl-hint" class="text-[10px] text-slate-400 mt-1 ml-1">💡 Si lo dejas vacío se enviará un mensaje bonito por defecto</p>
+                    <textarea id="custom-message" rows="3" class="w-full p-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl resize-none outline-none focus:border-pink-400 transition text-sm leading-relaxed"></textarea>
+                    <p id="lbl-hint" class="text-[10px] text-slate-400 mt-1 ml-1">💡 Si lo dejas vacío se usará un mensaje bonito por defecto</p>
                 </div>
-
-                <button id="btn-generate" onclick="generateLink()"
-                    class="btn-primary w-full text-white font-black py-4 rounded-2xl transform active:scale-95 transition shadow-xl uppercase tracking-wider text-sm">
+                <button id="btn-generate" onclick="generateLink()" class="btn-primary w-full text-white font-black py-4 rounded-2xl transform active:scale-95 transition shadow-xl uppercase tracking-wider text-sm">
                     Generar Link 🚀
                 </button>
             </div>
@@ -87,59 +73,44 @@
                 <div class="p-4 bg-green-50 rounded-2xl border-2 border-green-200">
                     <p id="lbl-result" class="text-xs text-green-700 font-bold mb-2 text-left">✅ ¡Tu link está listo! Cópialo y envíalo:</p>
                     <div class="flex items-center gap-2">
-                        <input id="final-url" type="text" readonly
-                            class="flex-1 bg-white text-[11px] text-green-700 font-mono outline-none border border-green-200 rounded-xl p-2 min-w-0 overflow-hidden text-ellipsis">
-                        <button id="btn-copy" onclick="copyLink()"
-                            class="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-xl text-[11px] font-black whitespace-nowrap transition active:scale-95">
-                            COPIAR
-                        </button>
+                        <input id="final-url" type="text" readonly class="flex-1 bg-white text-[11px] text-green-700 font-mono outline-none border border-green-200 rounded-xl p-2 min-w-0 overflow-hidden text-ellipsis">
+                        <button id="btn-copy" onclick="copyLink()" class="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-xl text-[11px] font-black whitespace-nowrap transition active:scale-95">COPIAR</button>
                     </div>
                 </div>
             </div>
 
-            <p id="stats-trigger" onclick="handleStatsTrigger()"
-                class="stats-trigger text-slate-300 text-[9px] mt-5 cursor-pointer select-none hover:text-pink-300 transition">
-                Hecho con ❤️ amor
-            </p>
+            <p id="stats-trigger" onclick="handleStatsTrigger()" class="stats-trigger text-slate-300 text-[9px] mt-5 cursor-pointer select-none hover:text-pink-300 transition">Hecho con ❤️ amor</p>
         </div>
 
 
-        <!-- ============================================================ -->
-        <!-- RECEIVER VIEW                                                 -->
-        <!-- ============================================================ -->
+        <!-- ================================================== -->
+        <!-- RECEIVER VIEW                                       -->
+        <!-- ================================================== -->
         <div id="receiver-view" class="hidden">
 
-            <!-- 1) TAP OVERLAY -->
+            <!-- 1. TAP OVERLAY -->
             <div id="tap-overlay" class="py-8 px-2 fade-in">
                 <div class="gift-bounce text-8xl mb-5">🎁</div>
                 <h2 id="tap-title" class="creator-title text-2xl font-black text-slate-800 mb-2">Tienes una sorpresa</h2>
                 <p  id="tap-sub"   class="text-slate-500 text-sm mb-8">Alguien pensó en ti hoy 💕</p>
-                <button id="tap-btn" onclick="beginPrank()"
-                    class="btn-primary pulse-btn text-white font-black py-4 px-12 rounded-2xl text-lg shadow-xl transform active:scale-95 transition">
+                <button id="tap-btn" onclick="beginPrank()" class="btn-primary pulse-btn text-white font-black py-4 px-12 rounded-2xl text-lg shadow-xl transform active:scale-95 transition">
                     ¡Abrir! 💝
                 </button>
                 <p id="tap-hint" class="text-slate-300 text-[10px] mt-5">🔊 Activa el sonido para la experiencia completa</p>
             </div>
 
-            <!-- 2) PRANK SCREEN -->
+            <!-- 2. PRANK SCREEN -->
             <div id="prank-screen" class="hidden py-4">
                 <div id="troll-visual" class="text-6xl mb-3 animate-spin-slow">⚠️</div>
-
-                <!--
-                    ★ FIX DEFINITIVO del texto pegado:
-                      - SIN ninguna clase whitespace-* de Tailwind aquí.
-                      - El CSS maneja: white-space: pre-wrap (preserva espacios Y saltos de línea, permite wrap)
-                      - El JS usa: el.textContent += char  (NO innerText, que normaliza espacios)
-                -->
+                <!-- FIX: white-space:pre-wrap en CSS + textContent en JS -->
                 <div id="prank-text" class="terminal-box p-5 rounded-2xl text-left mb-6 terminal-cursor"></div>
-
                 <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden mb-2 border border-slate-200">
                     <div id="progress-bar" class="progress-glow h-full rounded-full" style="width:0%"></div>
                 </div>
                 <p id="ui-status" class="text-[9px] mt-2 text-slate-400 font-mono tracking-widest uppercase">System Status: ⚠️ WARNING</p>
             </div>
 
-            <!-- 3) FINAL SCREEN -->
+            <!-- 3. FINAL SCREEN -->
             <div id="final-screen" class="hidden py-2">
                 <div class="text-5xl mb-1 float-anim">✨</div>
                 <div class="text-5xl mb-4 heartbeat">💝</div>
@@ -150,52 +121,80 @@
                     <p id="final-text" class="text-sm text-slate-700 leading-relaxed"></p>
                 </div>
 
-                <!-- Pregunta (solo amor) -->
-                <div id="question-area" class="hidden mb-5">
-                    <p id="question-text" class="font-black mb-4 text-pink-500 text-base">¿Me perdonas la broma? 🥺</p>
+                <!-- ========== GAME AREA ========== -->
+                <div id="game-area" class="hidden mb-5 p-4 game-card rounded-2xl">
 
-                    <!-- Botones Sí / NO fugitivo -->
-                    <div id="btn-no-wrapper" class="relative flex justify-center items-center h-14">
-                        <button id="btn-yes" onclick="celebrate()"
-                            class="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-10 py-3 rounded-full font-black shadow-lg transform active:scale-95 transition z-10">
-                            Sí ❤️
-                        </button>
-                        <button id="btn-no"
-                            class="bg-slate-200 text-slate-500 px-7 py-2.5 rounded-full font-bold text-sm transition absolute right-0">
-                            NO
-                        </button>
+                    <!-- AMOR: Sí / NO fugitivo -->
+                    <div id="game-amor" class="hidden">
+                        <p id="question-text" class="font-black mb-4 text-pink-500 text-base">¿Me perdonas la broma? 🥺</p>
+                        <div id="btn-no-wrapper" class="relative flex justify-center items-center h-14">
+                            <button id="btn-yes" onclick="celebrate()"
+                                class="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-10 py-3 rounded-full font-black shadow-lg z-10 transform active:scale-95 transition">
+                                Sí ❤️
+                            </button>
+                            <button id="btn-no"
+                                class="bg-slate-200 text-slate-500 px-7 py-2.5 rounded-full font-bold text-sm transition absolute right-0">
+                                NO
+                            </button>
+                        </div>
+                        <div id="celebrate-msg" class="hidden mt-4 fade-in text-center">
+                            <div class="text-3xl mb-1">🥰</div>
+                            <p id="celebrate-text" class="font-black text-pink-500 text-base">¡Lo sabía!</p>
+                            <p id="celebrate-sub"  class="text-slate-600 text-sm mt-1">¡Gracias! Te quiero mucho ❤️</p>
+                        </div>
                     </div>
 
-                    <!-- Mensaje de celebración inline -->
-                    <div id="celebrate-msg" class="hidden mt-4 p-4 bg-pink-50 border-2 border-pink-200 rounded-2xl fade-in">
-                        <div class="text-3xl mb-1">🥰</div>
-                        <p id="celebrate-text" class="font-black text-pink-500 text-base">¡Lo sabía!</p>
-                        <p id="celebrate-sub"  class="text-slate-600 text-sm mt-1">¡Gracias por perdonarme! Te quiero mucho ❤️</p>
+                    <!-- AMISTAD: Apretón de manos counter -->
+                    <div id="game-amistad" class="hidden text-center">
+                        <p id="game-amistad-title" class="font-black mb-2 text-indigo-500 text-sm">¡Demuestra que eres mi amigo/a! 🤝</p>
+                        <button id="tap-game-btn" onclick="handleTapGame()"
+                            class="game-tap-btn text-7xl block mx-auto mb-2 cursor-pointer select-none">🤜</button>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-1 border border-slate-200">
+                            <div id="tap-progress" class="bg-indigo-400 h-full rounded-full transition-all duration-300" style="width:0%"></div>
+                        </div>
+                        <p id="tap-progress-text" class="text-xs text-slate-500 mt-1 mb-1 font-mono"></p>
+                        <div id="tap-done-msg" class="hidden fade-in">
+                            <div class="text-4xl mb-1">🤝</div>
+                            <p id="tap-done-text" class="font-black text-indigo-500 text-sm">¡Eres el/la mejor amigo/a!</p>
+                        </div>
                     </div>
-                </div>
+
+                    <!-- FAMILIAR: Abrazos virtuales counter -->
+                    <div id="game-familiar" class="hidden text-center">
+                        <p id="game-familiar-title" class="font-black mb-2 text-amber-600 text-sm">¡Paga tu deuda de abrazos! 🤗</p>
+                        <button id="hug-game-btn" onclick="handleHugGame()"
+                            class="game-tap-btn text-7xl block mx-auto mb-2 cursor-pointer select-none">🤗</button>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-1 border border-slate-200">
+                            <div id="hug-progress" class="bg-amber-400 h-full rounded-full transition-all duration-300" style="width:0%"></div>
+                        </div>
+                        <p id="hug-progress-text" class="text-xs text-slate-500 mt-1 mb-1 font-mono"></p>
+                        <div id="hug-done-msg" class="hidden fade-in">
+                            <div class="text-4xl mb-1">💝</div>
+                            <p id="hug-done-text" class="font-black text-amber-600 text-sm">¡Deuda de abrazos saldada!</p>
+                        </div>
+                    </div>
+
+                </div><!-- /game-area -->
 
                 <!-- Botón compartir -->
-                <div class="space-y-2 mt-3">
-                    <button onclick="goToCreator()"
-                        id="btn-share" class="btn-primary w-full text-white font-black py-4 rounded-2xl text-sm shadow-xl transform active:scale-95 transition">
+                <div class="space-y-1 mt-3">
+                    <button id="btn-share" onclick="goToCreator()" class="btn-primary w-full text-white font-black py-4 rounded-2xl text-sm shadow-xl transform active:scale-95 transition">
                         💌 ¡Quiero enviarle esto a alguien!
                     </button>
                     <p id="share-sub" class="text-slate-400 text-[11px]">Crea tu propia sorpresa personalizada →</p>
                 </div>
 
-                <!-- Donación broma -->
+                <!-- Donación -->
                 <div class="mt-5 pt-5 border-t border-slate-100">
-                    <button onclick="showDonationJoke()"
-                        class="bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold py-2 px-6 rounded-full text-[10px] uppercase transition border border-amber-200">
+                    <button id="btn-donation" onclick="showDonationJoke()" class="bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold py-2 px-6 rounded-full text-[10px] uppercase transition border border-amber-200">
                         ☕ Invitar un café al creador
                     </button>
                 </div>
 
-                <p id="stats-trigger-r" onclick="handleStatsTrigger()"
-                    class="stats-trigger text-slate-200 text-[9px] mt-4 cursor-pointer select-none hover:text-pink-300 transition">
+                <p id="stats-trigger-r" onclick="handleStatsTrigger()" class="stats-trigger text-slate-200 text-[9px] mt-4 cursor-pointer select-none hover:text-pink-300 transition">
                     Hecho con ❤️ amor
                 </p>
-            </div>
+            </div><!-- /final-screen -->
 
         </div><!-- /receiver-view -->
     </div><!-- /main-container -->
