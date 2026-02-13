@@ -1,0 +1,28 @@
+@keyframes shake {
+    0% { transform: translate(1px, 1px); }
+    50% { transform: translate(-2px, 2px); }
+    100% { transform: translate(1px, -1px); }
+}
+
+.shake-heavy { animation: shake 0.1s infinite; }
+
+.animate-spin-slow {
+    animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#btn-no { transition: all 0.15s ease-out; cursor: pointer; }
+
+body {
+    background-color: #0f172a;
+    background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+    background-size: 32px 32px;
+}
+
+#main-container {
+    backface-visibility: hidden;
+}
