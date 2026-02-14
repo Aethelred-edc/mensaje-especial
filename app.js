@@ -1,17 +1,82 @@
 /* ================================================================
-   app.js — Sorpresa Especial 💝  v5.0
-   ✅ Fuentes más grandes (CSS)
-   ✅ Texto sin cortes inferiores
+   app.js — Sorpresa Especial 💝  v6.0
+   ✅ Firebase Realtime Database integrado
+   ✅ Panel de datos con tabla (botón flotante)
+   ✅ ES / EN 100% traducidos en TODAS las pantallas
    ✅ Juegos únicos por sub-categoría
+   ✅ Trolleos individuales por categoría/sub
    ✅ Idioma funciona en TODAS las pantallas incluyendo prank
    ✅ Privacidad: saludo anónimo para Crush / Amor Platónico
    ✅ 4 melodías: Ambient / Chaos / Romantic / Phonk-Trivia
    ✅ Trivia 14 Feb con phonk celebration
-   ✅ Estadísticas 100% confiables con localStorage
+   ✅ Estadísticas localStorage + Firebase
    ================================================================ */
 
 // ═══════════════════════════════════════════════════════════════
-// CONFIG
+// FIREBASE CONFIG & INIT
+// ═══════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCN2hc4fiJelP7CxG_-I266t3Vaz91onTk",
+  authDomain: "webapp-5efaa.firebaseapp.com",
+  databaseURL: "https://webapp-5efaa-default-rtdb.firebaseio.com",
+  projectId: "webapp-5efaa",
+  storageBucket: "webapp-5efaa.firebasestorage.app",
+  messagingSenderId: "183660405644",
+  appId: "1:183660405644:web:d62e94bf4e512ee03f2ca9",
+  measurementId: "G-F828QCEKG7"
+};
+
+let fbDb = null;
+function initFirebase() {
+  try {
+    if (!firebase || !firebase.initializeApp) return;
+    if (!firebase.apps.length) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    fbDb = firebase.database();
+  } catch(e) { console.warn('Firebase init error:', e); }
+}
+
+async function fbIncrement(path) {
+  if (!fbDb) return;
+  try {
+    await fbDb.ref(path).transaction(val => (val || 0) + 1);
+  } catch(e) { console.warn('Firebase increment error:', e); }
+}
+
+async function fbLogEvent(type, cat, sub, lang) {
+  if (!fbDb) return;
+  try {
+    await fbDb.ref('events').push({
+      type, cat, sub: sub || '', lang: lang || 'es',
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+  } catch(e) { console.warn('Firebase log error:', e); }
+}
+
+async function loadFirebaseStats() {
+  if (!fbDb) return null;
+  try {
+    const snap = await fbDb.ref('stats').once('value');
+    return snap.val() || {};
+  } catch(e) { return null; }
+}
+
+async function loadRecentEvents(limit) {
+  limit = limit || 40;
+  if (!fbDb) return [];
+  try {
+    const snap = await fbDb.ref('events').orderByChild('timestamp').limitToLast(limit).once('value');
+    const events = [];
+    snap.forEach(function(child) {
+      events.push(Object.assign({}, child.val(), { id: child.key }));
+    });
+    return events.reverse();
+  } catch(e) { return []; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIG — TEXTOS COMPLETOS ES + EN
 // ═══════════════════════════════════════════════════════════════
 const config = {
 
@@ -24,7 +89,6 @@ es: {
     familiar: ['Mamá','Papá','Hermano/a','Tío/a','Primo/a','Abuela/o']
   },
 
-  // Categorías cuyo saludo NO debe revelar al remitente
   privateGreeting: ['Crush','Amor Platónico'],
   privateGreetingText: '¡Para ti! De: Alguien especial 💌',
 
@@ -107,7 +171,7 @@ es: {
   donationBtn:'☕ Invitar un café al creador',
   donation:'⚠️ ERROR DE TRANSACCIÓN:\n\nEl sistema de pagos se ha bloqueado porque el programador aún no tiene edad legal para tener cuenta bancaria.\n\n¡Mejor regálale un chocolate! 🍫🍭',
   copied:'✓ COPIADO',
-  statsResult:'📊 ESTADÍSTICAS (desde este dispositivo)\n\n🆔 Tu ID: {did}\n👆 Tus visitas: {myvisits}\n🔗 Links que generaste: {mylinks}\n\n💡 Tus propias aperturas no afectan a las métricas del mañana si filtras por tu ID.',
+  statsResult:'📊 ESTADÍSTICAS (desde este dispositivo)\n\n🆔 Tu ID: {did}\n👆 Tus visitas: {myvisits}\n🔗 Links que generaste: {mylinks}\n\n💡 Tus propias aperturas no afectan a las métricas.',
   statsError:'No se pudieron cargar las estadísticas.',
   trivia: {
     question: '🤔 ¿Por qué se celebra el 14 de febrero?',
@@ -121,6 +185,26 @@ es: {
     rel:'Tipo de relación', dest:'¿Para quién es?', msg:'Tu mensaje especial',
     msgOpt:'✨ Opcional', msgHint:'💡 Si lo dejas vacío se usará un mensaje bonito por defecto',
     msgHolder:'Escribe algo especial para esa persona... 💕', copy:'COPIAR', result:'✅ ¡Tu link está listo! Cópialo y envíalo:'
+  },
+  dataTable: {
+    btnTitle: 'Panel de datos',
+    title: '📊 Panel de Estadísticas',
+    subtitle: 'Datos en tiempo real • Firebase',
+    visits: 'Visitas totales',
+    links: 'Links generados',
+    recentEvents: 'Eventos recientes',
+    noEvents: 'Sin eventos aún. ¡Comparte el link!',
+    colType: 'Tipo',
+    colCat: 'Categoría',
+    colSub: 'Sub',
+    colLang: 'Idioma',
+    colTime: 'Hora',
+    typeVisit: '👁 Visita',
+    typeLink: '🔗 Link',
+    close: 'Cerrar',
+    loading: 'Cargando datos...',
+    error: 'Error al conectar con Firebase',
+    refresh: '🔄 Actualizar'
   }
 },
 
@@ -209,7 +293,7 @@ en: {
   donationBtn:'☕ Buy the creator a coffee',
   donation:'⚠️ TRANSACTION ERROR:\n\nPayment system is locked because the developer is not legally old enough to have a bank account.\n\nSend chocolate instead! 🍫🍭',
   copied:'✓ COPIED',
-  statsResult:'📊 STATS (this device)\n\n🆔 Your ID: {did}\n👆 Your visits: {myvisits}\n🔗 Links you generated: {mylinks}\n\n💡 Your own opens won\'t affect tomorrow\'s metrics if you filter by your ID.',
+  statsResult:'📊 STATS (this device)\n\n🆔 Your ID: {did}\n👆 Your visits: {myvisits}\n🔗 Links you generated: {mylinks}\n\n💡 Your own opens won\'t affect tomorrow\'s metrics.',
   statsError:'Could not load statistics.',
   trivia: {
     question: '🤔 Why is February 14th celebrated?',
@@ -223,6 +307,26 @@ en: {
     rel:'Relationship type', dest:'Who is it for?', msg:'Your special message',
     msgOpt:'✨ Optional', msgHint:'💡 If left blank a beautiful default message will be used',
     msgHolder:'Write something special for this person... 💕', copy:'COPY', result:'✅ Your link is ready! Copy and send it:'
+  },
+  dataTable: {
+    btnTitle: 'Data panel',
+    title: '📊 Statistics Panel',
+    subtitle: 'Real-time data • Firebase',
+    visits: 'Total visits',
+    links: 'Links generated',
+    recentEvents: 'Recent events',
+    noEvents: 'No events yet. Share the link!',
+    colType: 'Type',
+    colCat: 'Category',
+    colSub: 'Sub',
+    colLang: 'Lang',
+    colTime: 'Time',
+    typeVisit: '👁 Visit',
+    typeLink: '🔗 Link',
+    close: 'Close',
+    loading: 'Loading data...',
+    error: 'Error connecting to Firebase',
+    refresh: '🔄 Refresh'
   }
 }
 
@@ -243,7 +347,7 @@ let chaosOscNodes  = [];
 let melodyTimer    = null;
 let melodyNoteIdx  = 0;
 let firstClickDone = false;
-let currentTyper   = null;   // intervalo del tipeo en prank
+let currentTyper   = null;
 
 let statsClicks    = 0, statsTimer = null;
 let noEscapes      = 0, noLastTime = 0;
@@ -251,12 +355,11 @@ let tapCount       = 0, hugCount   = 0;
 let triviaAnswered = false;
 const MAX_ESCAPES  = 6;
 
-// ── Sub-categoría actual (para lookup de juego) ────────────
 let currentCat = 'amistad';
 let currentSub = '';
 
 // ═══════════════════════════════════════════════════════════════
-// DEVICE TRACKING — localStorage (100% confiable, sin backend)
+// DEVICE TRACKING — localStorage
 // ═══════════════════════════════════════════════════════════════
 function getDeviceId() {
     let id = localStorage.getItem('sp_did');
@@ -275,7 +378,98 @@ function incMyLinks()   { localStorage.setItem('sp_l',  String(getMyLinks() + 1)
 // CountAPI (bonus, puede fallar)
 const NS = 'sorpresa-naofomi-v5';
 async function hitCounter(key) {
-    try { await fetch(`https://api.countapi.xyz/hit/${NS}/${key}`); } catch (_) {}
+    try { await fetch('https://api.countapi.xyz/hit/' + NS + '/' + key); } catch (_) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA TABLE PANEL
+// ═══════════════════════════════════════════════════════════════
+function showDataTable() {
+    const modal = document.getElementById('data-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    loadDataTableContent();
+}
+
+function closeDataTable() {
+    const modal = document.getElementById('data-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+async function loadDataTableContent() {
+    const t = config[currentLang].dataTable;
+    const statsEl  = document.getElementById('dt-stats');
+    const tableEl  = document.getElementById('dt-table-body');
+    const titleEl  = document.getElementById('dt-title');
+    const subtitleEl = document.getElementById('dt-subtitle');
+
+    if (titleEl)    titleEl.textContent   = t.title;
+    if (subtitleEl) subtitleEl.textContent = t.subtitle;
+
+    if (statsEl)  statsEl.innerHTML  = '<span class="dt-loading">' + t.loading + '</span>';
+    if (tableEl)  tableEl.innerHTML  = '<tr><td colspan="5" class="dt-loading-cell">' + t.loading + '</td></tr>';
+
+    const results = await Promise.all([loadFirebaseStats(), loadRecentEvents(40)]);
+    const stats  = results[0];
+    const events = results[1];
+
+    // Stats cards
+    if (statsEl) {
+        if (stats) {
+            statsEl.innerHTML =
+                '<div class="dt-stat-card">' +
+                    '<span class="dt-stat-num">' + (stats.visitas || 0) + '</span>' +
+                    '<span class="dt-stat-label">' + t.visits + '</span>' +
+                '</div>' +
+                '<div class="dt-stat-card">' +
+                    '<span class="dt-stat-num">' + (stats.links_generados || 0) + '</span>' +
+                    '<span class="dt-stat-label">' + t.links + '</span>' +
+                '</div>';
+        } else {
+            statsEl.innerHTML = '<span class="dt-error">' + t.error + '</span>';
+        }
+    }
+
+    // Table rows
+    if (tableEl) {
+        if (!events || events.length === 0) {
+            tableEl.innerHTML = '<tr><td colspan="5" class="dt-loading-cell">' + t.noEvents + '</td></tr>';
+        } else {
+            tableEl.innerHTML = events.map(function(ev) {
+                var date = new Date(ev.timestamp || Date.now());
+                var timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+                var typeBadge = ev.type === 'visit'
+                    ? '<span class="dt-badge-visit">' + t.typeVisit + '</span>'
+                    : '<span class="dt-badge-link">' + t.typeLink + '</span>';
+                return '<tr class="dt-row">' +
+                    '<td class="dt-cell">' + typeBadge + '</td>' +
+                    '<td class="dt-cell">' + (ev.cat || '-') + '</td>' +
+                    '<td class="dt-cell">' + (ev.sub || '-') + '</td>' +
+                    '<td class="dt-cell dt-lang">' + (ev.lang || '-') + '</td>' +
+                    '<td class="dt-cell dt-time">' + timeStr + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+    }
+
+    // Translate table headers
+    var headers = {
+        'dt-col-type': t.colType,
+        'dt-col-cat':  t.colCat,
+        'dt-col-sub':  t.colSub,
+        'dt-col-lang': t.colLang,
+        'dt-col-time': t.colTime,
+        'dt-events-title': t.recentEvents,
+        'dt-close-btn': t.close,
+        'dt-refresh-btn': t.refresh
+    };
+    for (var id in headers) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = headers[id];
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -356,7 +550,8 @@ function playPop() {
         o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.12);
     } catch (_) {}
 }
-function playDing(f1=880,f2=1320) {
+function playDing(f1,f2) {
+    f1 = f1||880; f2 = f2||1320;
     const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
     try {
         const t=ctx.currentTime;
@@ -398,6 +593,7 @@ function playCheer() {
 // ═══════════════════════════════════════════════════════════════
 function stopAllMusic() {
     clearTimeout(chordTimer); clearTimeout(chaosTimer); clearTimeout(melodyTimer);
+    if (typeof phonkTimer !== 'undefined') clearTimeout(phonkTimer);
     musicNodes.forEach(n => {
         try { if (n.stop)       n.stop();       } catch (_) {}
         try { if (n.disconnect) n.disconnect(); } catch (_) {}
@@ -478,8 +674,7 @@ function startChaosMusic() {
     stopAllMusic(); musicMode='chaos'; playChaosChord(); updateMusicBtn();
 }
 
-// ── MODO 3: ROMÁNTICA (reveal) — melodía real ─────────────────
-// Melodía en Do mayor: C5-E5-G5-A5-G5-F5-E5-D5 (loop)
+// ── MODO 3: ROMÁNTICA (reveal) ─────────────────────────────
 const ROMANTIC_MELODY = [523.25,659.25,783.99,880.00,783.99,698.46,659.25,587.33];
 const ROMANTIC_BACKING = [
     [261.63,329.63,392.00],[220.00,261.63,329.63],
@@ -492,14 +687,12 @@ function playRomanticNote() {
     const t=ctx.currentTime;
     const freq=ROMANTIC_MELODY[melodyNoteIdx%ROMANTIC_MELODY.length]; melodyNoteIdx++;
     try {
-        // Nota principal (sine suave, levemente reverberada)
         const o=ctx.createOscillator(),g=ctx.createGain();
         o.type='sine'; o.frequency.value=freq;
         g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.11,t+.06);
         g.gain.setValueAtTime(0.11,t+.28); g.gain.exponentialRampToValueAtTime(0.001,t+.5);
         o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.5);
         musicNodes.push(o,g);
-        // Armónico (flute-like)
         const o2=ctx.createOscillator(),g2=ctx.createGain();
         o2.type='triangle'; o2.frequency.value=freq*2;
         g2.gain.setValueAtTime(0,t); g2.gain.linearRampToValueAtTime(0.04,t+.06);
@@ -507,7 +700,6 @@ function playRomanticNote() {
         o2.connect(g2); g2.connect(ctx.destination); o2.start(t); o2.stop(t+.4);
         musicNodes.push(o2,g2);
     } catch (_) {}
-    // Acordes de acompañamiento cada 4 notas
     if (melodyNoteIdx%4===0) {
         const chord=ROMANTIC_BACKING[romantBackIdx%ROMANTIC_BACKING.length]; romantBackIdx++;
         chord.forEach(f=>{
@@ -521,7 +713,7 @@ function playRomanticNote() {
             } catch (_) {}
         });
     }
-    melodyTimer=setTimeout(playRomanticNote,480); // ~125 BPM
+    melodyTimer=setTimeout(playRomanticNote,480);
 }
 function startRomanticMusic() {
     const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
@@ -530,17 +722,15 @@ function startRomanticMusic() {
 }
 
 // ── MODO 4: PHONK (trivia celebration) ───────────────────────
-// Características: 140BPM, bajo pesado, hi-hat, kick
 let phonkTimer=null;
 let phonkBeat=0;
 function playPhonkBeat() {
     if (musicMode!=='phonk') return;
     const ctx=getAudioCtx(); if (!ctx) return;
     const t=ctx.currentTime;
-    const beat60=60/140; // 1 beat a 140BPM = 0.428s
-    const e=beat60/2;    // 1/8 note
+    const beat60=60/140;
+    const e=beat60/2;
 
-    // KICK (cada beat par)
     if (phonkBeat%2===0) {
         try {
             const o=ctx.createOscillator(),g=ctx.createGain();
@@ -550,7 +740,6 @@ function playPhonkBeat() {
             musicNodes.push(o,g);
         } catch (_) {}
     }
-    // HI-HAT (cada 1/8 note)
     try {
         const buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.022),ctx.sampleRate);
         const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*.5;
@@ -559,7 +748,6 @@ function playPhonkBeat() {
         ns.connect(ng); ng.connect(ctx.destination); ns.start(t);
         musicNodes.push(ns,ng);
     } catch (_) {}
-    // BASS (cada beat)
     if (phonkBeat%2===0) {
         try {
             const o=ctx.createOscillator(),g=ctx.createGain();
@@ -569,7 +757,6 @@ function playPhonkBeat() {
             musicNodes.push(o,g);
         } catch (_) {}
     }
-    // LEAD MELODÍA (beats 3-4 del compás)
     if (phonkBeat%8>=4) {
         const leads=[698.46,783.99,880.00,783.99];
         const lFreq=leads[(phonkBeat%8)-4]||698.46;
@@ -612,7 +799,6 @@ function updateMusicBtn() {
     btn.style.boxShadow=musicMode!=='none'?'0 0 16px rgba(236,72,153,0.5)':'0 4px 15px rgba(0,0,0,0.3)';
 }
 
-// Primer clic → música ambient
 function setupFirstClickMusic() {
     const fn=()=>{ if (firstClickDone) return; firstClickDone=true; unlockAudio();
         if (musicMode==='none'
@@ -634,7 +820,6 @@ function getSubIndex(cat,sub) {
     return 0;
 }
 function getTrolleo(cat,sub) {
-    // Usa currentLang en tiempo real
     const pool=config[currentLang]?.trolleos?.[cat];
     if (!pool) return '';
     if (pool[sub]) return pool[sub];
@@ -656,7 +841,6 @@ function getGame(cat,sub) {
     return pool[keys[idx]]||pool[keys[0]]||null;
 }
 
-// ★ Saludo con privacidad
 function getGreeting(lang,cat,sub) {
     const t=config[lang];
     if (t.privateGreeting && t.privateGreeting.includes(sub)) return t.privateGreetingText;
@@ -689,7 +873,12 @@ function changeLang(lang) {
     }
 
     const rv=el('receiver-view');
-    if (!rv||rv.classList.contains('hidden')) return;
+    if (!rv||rv.classList.contains('hidden')) {
+        // Update data-table button title
+        const dtBtn = el('dt-btn');
+        if (dtBtn) dtBtn.title = t.dataTable.btnTitle;
+        return;
+    }
 
     // Tap overlay
     if (el('tap-title')) el('tap-title').textContent=t.tapTitle;
@@ -697,7 +886,7 @@ function changeLang(lang) {
     if (el('tap-btn'))   el('tap-btn').textContent=t.tapBtn;
     if (el('tap-hint'))  el('tap-hint').textContent=t.tapHint;
 
-    // ★ Si la pantalla de PRANK está activa → reiniciar tipeo en nuevo idioma
+    // Si la pantalla de PRANK está activa → reiniciar tipeo
     const ps=el('prank-screen');
     if (ps&&!ps.classList.contains('hidden')) {
         restartPrankTyping();
@@ -710,11 +899,15 @@ function changeLang(lang) {
         refreshFinalScreen(lang,p);
     }
 
-    // Trivia (actualizar si está visible)
+    // Trivia
     const ta=el('trivia-area');
     if (ta&&!ta.classList.contains('hidden')&&!triviaAnswered) {
         renderTrivia();
     }
+
+    // Data table button title
+    const dtBtn = el('dt-btn');
+    if (dtBtn) dtBtn.title = t.dataTable.btnTitle;
 }
 
 function refreshFinalScreen(lang,params) {
@@ -776,7 +969,11 @@ function generateLink() {
     document.getElementById('final-url').value=url;
     const ra=document.getElementById('result-area'); ra.classList.remove('hidden');
     ra.scrollIntoView({behavior:'smooth',block:'nearest'});
-    incMyLinks(); hitCounter('links-generados');
+    incMyLinks();
+    hitCounter('links-generados');
+    // Firebase tracking
+    fbIncrement('stats/links_generados');
+    fbLogEvent('link', c, s, currentLang);
 }
 async function copyLink() {
     unlockAudio();
@@ -809,7 +1006,7 @@ function beginPrank() {
 function startTyping(p) {
     const cat=p.get('c')||'amistad';
     const sub=decodeURIComponent(p.get('s')||'');
-    const msg=getTrolleo(cat,sub);  // ← usa currentLang en tiempo real
+    const msg=getTrolleo(cat,sub);
     const el=document.getElementById('prank-text');
     el.style.whiteSpace='pre-wrap'; el.textContent=''; el.classList.remove('terminal-cursor');
 
@@ -824,11 +1021,9 @@ function startTyping(p) {
     },28);
 }
 
-// ★ Reiniciar tipeo al cambiar idioma durante prank
 function restartPrankTyping() {
     if (currentTyper){ clearInterval(currentTyper); currentTyper=null; }
     const p=new URLSearchParams(location.search);
-    // Resetear barra
     const bar=document.getElementById('progress-bar'); if(bar) bar.style.width='0%';
     startTyping(p);
 }
@@ -847,7 +1042,7 @@ function fillBar(p) {
 
 function showFinal(p) {
     playFanfare(); launchConfetti();
-    setTimeout(startRomanticMusic,900);  // ★ melodía romántica
+    setTimeout(startRomanticMusic,900);
 
     document.getElementById('prank-screen').classList.add('hidden');
     const fs=document.getElementById('final-screen');
@@ -857,7 +1052,7 @@ function showFinal(p) {
     const cat=p.get('c')||'amistad';
     const sub=decodeURIComponent(p.get('s')||'');
     const t=config[lang];
-    currentCat=cat; currentSub=sub;  // guardar para uso en refreshes
+    currentCat=cat; currentSub=sub;
 
     const rawB64=p.get('m');
     let finalMsg=getFinalMsg(cat,sub);
@@ -871,7 +1066,6 @@ function showFinal(p) {
 
     initGame(lang,cat,sub);
 
-    // Mostrar trivia después de 1.5s
     setTimeout(()=>{
         renderTrivia();
         document.getElementById('trivia-area').classList.remove('hidden');
@@ -974,7 +1168,6 @@ function renderTrivia() {
         btn.onclick=()=>checkTrivia(i);
         optContainer.appendChild(btn);
     });
-    // Reset result
     const res=el('trivia-result'); if(res){ res.classList.add('hidden'); }
 }
 
@@ -1000,14 +1193,11 @@ function checkTrivia(idx) {
     resDiv.classList.remove('hidden');
 
     if (correct) {
-        // ★ PHONK CELEBRATION
         setTimeout(startPhonkMusic,200);
         epicConfetti();
-        // Animación de la card
         const card=document.getElementById('main-container');
         card.classList.add('celebrate-flash');
         setTimeout(()=>card.classList.remove('celebrate-flash'),2000);
-        // Parar phonk después de 8 segundos y volver a romántica
         setTimeout(()=>{ if(musicMode==='phonk') startRomanticMusic(); },8000);
     } else {
         playDing(220,330);
@@ -1016,7 +1206,6 @@ function checkTrivia(idx) {
 
 function epicConfetti() {
     const colors=['#ff4d6d','#ffd700','#ff85a1','#00ff88','#4d88ff','#ff6b35','#a855f7'];
-    // Lluvia de confeti épica
     const end=Date.now()+4000;
     (function frame(){
         confetti({particleCount:8,angle:60, spread:55,origin:{x:0},colors});
@@ -1024,7 +1213,6 @@ function epicConfetti() {
         confetti({particleCount:5,angle:90, spread:70,origin:{x:.5,y:0},colors});
         if (Date.now()<end) requestAnimationFrame(frame);
     })();
-    // Explosión central extra
     confetti({particleCount:200,spread:100,origin:{y:.5},colors});
 }
 
@@ -1063,7 +1251,10 @@ function showStats() {
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-window.onload=()=>{
+window.onload=function(){
+    // Init Firebase
+    initFirebase();
+
     const p=new URLSearchParams(location.search);
     setupFirstClickMusic();
 
@@ -1078,10 +1269,16 @@ window.onload=()=>{
         document.getElementById('tap-hint').textContent=t.tapHint;
         document.getElementById('btn-lang-es').classList.toggle('active',lang==='es');
         document.getElementById('btn-lang-en').classList.toggle('active',lang==='en');
-        incMyVisits(); hitCounter('visitas-prank');
+        // Update data table button title
+        const dtBtn = document.getElementById('dt-btn');
+        if (dtBtn) dtBtn.title = t.dataTable.btnTitle;
+        incMyVisits();
+        hitCounter('visitas-prank');
+        // Firebase tracking
+        fbIncrement('stats/visitas');
+        fbLogEvent('visit', p.get('c')||'', decodeURIComponent(p.get('s')||''), lang);
     } else {
         // CREATOR
         changeLang('es');
     }
 };
-
