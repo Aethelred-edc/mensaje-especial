@@ -1,5 +1,7 @@
 /* ================================================================
-   styles.css — Sorpresa Especial 💝  v5.0
+   styles.css — Sorpresa Especial 💝  v6.0
+   ✅ Firebase Data Table Modal
+   ✅ FAB botón de datos (bottom-right)
    ✅ FIX definitivo texto cortado (line-height + padding + clip)
    ✅ Fuentes más grandes (accesibilidad)
    ✅ Trivia card + celebrate-flash (phonk)
@@ -19,7 +21,6 @@ body {
         radial-gradient(circle at 2px 2px,   rgba(255,255,255,0.04)   1px, transparent 0);
     background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px;
     font-family: 'Syne', system-ui, sans-serif;
-    /* NO overflow-x:hidden aquí — clipa los ascendentes/descendentes con border-radius */
 }
 
 /* ─── CARD ─────────────────────────────────────────────────────── */
@@ -31,69 +32,48 @@ body {
         inset 0 1px 0 rgba(255,255,255,0.9);
     backface-visibility: hidden;
     will-change: transform;
-    /* ★ overflow visible para NO clipear descendentes ni ascendentes de la Syne */
     overflow: visible;
 }
 
 /* ─── TIPOGRAFÍA — ESCALA ACCESIBLE ────────────────────────────── */
-
-/*
-  ★ FIX DEFINITIVO texto cortado:
-  La fuente Syne en bold tiene descendentes y ascendentes altos.
-  La combinación border-radius + overflow:hidden en contenedores padres
-  clipa el último píxel. Solución:
-    • line-height generoso (1.15 mínimo en títulos)
-    • padding-bottom para descendentes
-    • overflow: visible en todos los contenedores tipográficos
-    • clip-path: none
-    • text-rendering: optimizeLegibility
-*/
-
-/* Títulos de página (h1, h2) */
 .page-title {
     font-family: 'Syne', sans-serif;
-    font-size: clamp(1.6rem, 4.5vw, 2.2rem);   /* ★ MÁS GRANDE */
+    font-size: clamp(1.6rem, 4.5vw, 2.2rem);
     font-weight: 900;
     color: #1e293b;
-    line-height: 1.18;          /* ★ espacio extra arriba/abajo */
+    line-height: 1.18;
     letter-spacing: -0.5px;
-    padding-top: 4px;           /* ★ espacio para ascendentes */
-    padding-bottom: 3px;        /* ★ espacio para descendentes */
+    padding-top: 4px;
+    padding-bottom: 3px;
     overflow: visible;
     clip-path: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
 }
 
-/* Descripción secundaria */
 .sub-desc {
     font-size: clamp(0.65rem, 2vw, 0.78rem);
 }
 
-/* Cuerpo de texto (mensajes, juegos) */
 .body-text {
-    font-size: clamp(0.95rem, 2.8vw, 1.1rem);   /* ★ MÁS GRANDE */
+    font-size: clamp(0.95rem, 2.8vw, 1.1rem);
     line-height: 1.6;
     overflow: visible;
 }
 
-/* Texto de formulario (textarea, select) */
 .form-text {
-    font-size: clamp(0.9rem, 2.5vw, 1rem);       /* ★ MÁS GRANDE */
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
 }
 
-/* Hint / micro-texto */
 .hint-text {
     font-size: clamp(0.72rem, 2vw, 0.82rem);
 }
 
-/* Mono / terminal */
 .mono-text {
     font-family: 'Space Mono', 'Courier New', monospace;
     font-size: clamp(0.68rem, 1.8vw, 0.75rem);
 }
 
-/* Botón principal */
 .btn-text {
     font-size: clamp(0.82rem, 2.2vw, 0.92rem);
     letter-spacing: 0.08em;
@@ -134,7 +114,7 @@ body {
     background-repeat: no-repeat;
     background-position: right 1rem center;
     padding: 0.85rem 2.5rem 0.85rem 1rem;
-    font-size: clamp(0.9rem, 2.5vw, 1rem);   /* ★ MÁS GRANDE */
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
     cursor: pointer;
 }
 
@@ -193,23 +173,251 @@ body {
 }
 .music-btn:active { transform: scale(0.95); }
 
+/* ─── DATA TABLE FAB BUTTON ─────────────────────────────────────── */
+.dt-fab {
+    background: rgba(99, 102, 241, 0.20);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: white;
+    font-size: 1.2rem;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+    transition: all 0.25s ease;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+.dt-fab:hover {
+    background: rgba(99, 102, 241, 0.50);
+    border-color: rgba(99, 102, 241, 0.80);
+    transform: scale(1.1);
+    box-shadow: 0 0 16px rgba(99,102,241,0.45);
+}
+.dt-fab:active { transform: scale(0.95); }
+
+/* ─── DATA TABLE MODAL ──────────────────────────────────────────── */
+
+/* Overlay oscuro */
+.dt-overlay {
+    background: rgba(2, 6, 23, 0.80);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+/* Panel principal */
+.dt-panel {
+    background: #0f172a;
+    border: 1px solid rgba(99,102,241,0.30);
+    box-shadow:
+        0 25px 60px rgba(0,0,0,0.60),
+        0 0 0 1px rgba(255,255,255,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* Header del panel */
+.dt-header {
+    background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(168,85,247,0.10) 100%);
+    border-bottom: 1px solid rgba(99,102,241,0.20);
+    flex-shrink: 0;
+}
+.dt-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    font-weight: 900;
+    color: #e2e8f0;
+    line-height: 1.2;
+}
+.dt-subtitle {
+    font-size: 0.72rem;
+    color: #6366f1;
+    font-weight: 600;
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* Botones del header */
+.dt-icon-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+}
+.dt-icon-btn:hover {
+    background: rgba(99,102,241,0.25);
+    border-color: rgba(99,102,241,0.50);
+    color: #a5b4fc;
+}
+.dt-icon-btn.dt-close:hover {
+    background: rgba(239,68,68,0.20);
+    border-color: rgba(239,68,68,0.45);
+    color: #fca5a5;
+}
+
+/* Stats row */
+.dt-stats-row {
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-height: 60px;
+}
+.dt-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.22);
+    border-radius: 14px;
+    padding: 8px 18px;
+    min-width: 100px;
+}
+.dt-stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #a5b4fc;
+    line-height: 1.1;
+}
+.dt-stat-label {
+    font-size: 0.68rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+}
+
+/* Section title */
+.dt-section-title {
+    font-size: 0.70rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 4px;
+}
+
+/* Table */
+.dt-table {
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.dt-thead-row {
+    position: sticky;
+    top: 0;
+    background: #0f172a;
+    z-index: 1;
+}
+.dt-th {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    white-space: nowrap;
+}
+.dt-row {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+}
+.dt-row:hover {
+    background: rgba(99,102,241,0.07);
+}
+.dt-cell {
+    padding: 7px 10px;
+    color: #94a3b8;
+    vertical-align: middle;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dt-lang {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: #64748b;
+}
+.dt-time {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    color: #475569;
+    white-space: nowrap;
+}
+
+/* Badges */
+.dt-badge-visit {
+    display: inline-block;
+    background: rgba(34,197,94,0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.25);
+    border-radius: 99px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    white-space: nowrap;
+}
+.dt-badge-link {
+    display: inline-block;
+    background: rgba(99,102,241,0.15);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 99px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    white-space: nowrap;
+}
+
+/* Loading / error */
+.dt-loading {
+    color: #475569;
+    font-size: 0.78rem;
+    font-style: italic;
+}
+.dt-loading-cell {
+    color: #475569;
+    font-size: 0.78rem;
+    text-align: center;
+    padding: 24px;
+}
+.dt-error {
+    color: #f87171;
+    font-size: 0.78rem;
+}
+
+/* Scrollbar del modal */
+.dt-panel ::-webkit-scrollbar { width: 4px; height: 4px; }
+.dt-panel ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+.dt-panel ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.35); border-radius: 3px; }
+.dt-panel ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.60); }
+
 /* ─── TERMINAL ───────────────────────────────────────────────────── */
-/*
-  ★ FIX TEXTO: white-space: pre-wrap + textContent en JS (no innerText)
-  pre-wrap → preserva \n como saltos de línea reales Y permite wrapping
-*/
 .terminal-box {
     background-color: #020617;
     color: #4ade80;
     font-family: 'Space Mono', 'Courier New', monospace;
-    font-size: clamp(11px, 2.4vw, 13px);   /* ★ más legible */
+    font-size: clamp(11px, 2.4vw, 13px);
     line-height: 1.95;
     letter-spacing: 0.02em;
     text-shadow: 0 0 8px rgba(74,222,128,0.55);
     border: 1px solid rgba(74,222,128,0.2);
     min-height: 155px;
 
-    /* ★ CRÍTICO — preservar saltos de línea */
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -218,7 +426,7 @@ body {
     animation: terminalGlow 2.5s ease-in-out infinite;
 }
 
-/* Modo chaos del terminal (texto rojo, parpadeo) */
+/* Modo chaos del terminal */
 .terminal-box.chaos-mode {
     color: #ff4d4d;
     text-shadow: 0 0 10px rgba(255,77,77,0.70), 0 0 22px rgba(255,0,0,0.35);
@@ -281,7 +489,7 @@ body {
     background: white;
     border: 1.5px solid #e2e8f0;
     color: #334155;
-    font-size: clamp(0.88rem, 2.4vw, 0.98rem);  /* ★ MÁS GRANDE */
+    font-size: clamp(0.88rem, 2.4vw, 0.98rem);
     transition: all 0.18s ease;
     cursor: pointer;
 }
@@ -329,7 +537,7 @@ body {
 /* ─── STATS TRIGGER ─────────────────────────────────────────────── */
 .stats-trigger { transition: color 0.3s; user-select: none; -webkit-user-select: none; }
 
-/* ─── CELEBRATE FLASH (trivia correcto + phonk) ─────────────────── */
+/* ─── CELEBRATE FLASH ────────────────────────────────────────────── */
 @keyframes celebrateFlash {
     0%   { box-shadow: 0 0 0   0  rgba(255,215,0,0),   0 30px 70px rgba(0,0,0,0.40); }
     20%  { box-shadow: 0 0 50px 20px rgba(255,215,0,0.6), 0 0 80px rgba(255,100,0,0.4); }
@@ -399,13 +607,11 @@ body {
     50%     { transform: translateY(-10px); }
 }
 
-/* Brillo verde suave (terminal normal) */
 @keyframes terminalGlow {
     0%,100% { box-shadow: 0 0 6px  rgba(74,222,128,0.20), inset 0 0 8px  rgba(74,222,128,0.05); }
     50%     { box-shadow: 0 0 20px rgba(74,222,128,0.45), inset 0 0 18px rgba(74,222,128,0.12); }
 }
 
-/* Brillo rojo caótico (terminal prank) */
 @keyframes terminalChaos {
     0%   { box-shadow: 0 0 12px rgba(255,50,50,0.65), inset 0 0 16px rgba(255,0,0,0.10);   border-color: rgba(255,77,77,0.55);  }
     25%  { box-shadow: 0 0 28px rgba(255,150,0,0.55), inset 0 0 22px rgba(255,100,0,0.10); border-color: rgba(255,150,0,0.55); }
@@ -436,7 +642,6 @@ body {
 @media (max-width: 500px) {
     .card-main { border-radius: 1.8rem; }
 
-    /* ★ En móvil reducir un poco las fuentes pero MANTENER legibilidad */
     .page-title { font-size: 1.55rem; }
     .body-text  { font-size: 0.95rem; }
     .form-text  { font-size: 0.88rem; }
@@ -448,7 +653,6 @@ body {
         min-height: 130px !important;
     }
 
-    /* En móvil btn-no es estático (pantalla pequeña) */
     #btn-no-wrapper {
         flex-wrap: wrap; gap: 0.75rem;
         height: auto !important; overflow: visible;
@@ -460,7 +664,13 @@ body {
     }
 
     .music-btn { width: 40px; height: 40px; font-size: 1.05rem; }
+    .dt-fab    { width: 40px; height: 40px; font-size: 1.05rem; }
     .trivia-btn { font-size: 0.85rem; }
+
+    /* Modal full-screen en móvil */
+    .dt-panel { border-radius: 1.2rem; max-height: 95vh; }
+    .dt-stat-card { min-width: 80px; padding: 6px 12px; }
+    .dt-stat-num { font-size: 1.3rem; }
 }
 
 @media (max-width: 360px) {
@@ -475,7 +685,5 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #ec4899; }
 
 /* ─── EXTRAS ─────────────────────────────────────────────────────── */
-/* Selects y textareas sin borde focus outline nativo */
 select:focus, textarea:focus, input:focus { outline: none; }
-/* iOS tap highlight */
 button, select, textarea, input { -webkit-tap-highlight-color: transparent; }
