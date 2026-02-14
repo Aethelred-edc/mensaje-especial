@@ -11,13 +11,14 @@
 // FIREBASE CONFIGURATION
 // ═══════════════════════════════════════════════════════════════
 const firebaseConfig = {
-    apiKey: "TU_API_KEY_AQUI",
-    authDomain: "TU_PROYECTO.firebaseapp.com",
-    databaseURL: "https://TU_PROYECTO.firebaseio.com",
-    projectId: "TU_PROYECTO",
-    storageBucket: "TU_PROYECTO.appspot.com",
-    messagingSenderId: "TU_SENDER_ID",
-    appId: "TU_APP_ID"
+    apiKey: "AIzaSyCN2hc4fiJelP7CxG_-I266t3Vaz91onTk",
+  authDomain: "webapp-5efaa.firebaseapp.com",
+  databaseURL: "https://webapp-5efaa-default-rtdb.firebaseio.com",
+  projectId: "webapp-5efaa",
+  storageBucket: "webapp-5efaa.firebasestorage.app",
+  messagingSenderId: "183660405644",
+  appId: "1:183660405644:web:d62e94bf4e512ee03f2ca9",
+  measurementId: "G-F828QCEKG7"
 };
 
 // Initialize Firebase
@@ -1458,3 +1459,4 @@ window.onload = () => {
 };
 
 console.log('✨ Sorpresa Especial v6.0 - Loaded');
+
