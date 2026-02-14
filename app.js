@@ -1,13 +1,13 @@
 /* ================================================================
-   app.js — Sorpresa Especial 💝  v6.0
-   ✅ 4 idiomas completos: ES, EN, FR, PT
-   ✅ Firebase Realtime Database integrado
-   ✅ Dashboard de estadísticas en tiempo real
-   ✅ Todo lo anterior mantenido
+   app.js — Sorpresa Especial 💝  v5.0 + Firebase + Multiidioma
+   ✅ TODO LO ORIGINAL INTACTO
+   ✅ + Firebase Realtime Database
+   ✅ + 3 idiomas adicionales (EN, FR, PT)
+   ✅ + Dashboard de estadísticas
    ================================================================ */
 
 // ═══════════════════════════════════════════════════════════════
-// FIREBASE CONFIG
+// ★ FIREBASE INIT (NUEVO)
 // ═══════════════════════════════════════════════════════════════
 const firebaseConfig = {
     apiKey: "AIzaSyCN2hc4fiJelP7CxG_-I266t3Vaz91onTk",
@@ -20,19 +20,37 @@ const firebaseConfig = {
     measurementId: "G-F828QCEKG7"
 };
 
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+let database;
+try {
+    firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+} catch(e) {
+    console.warn('Firebase no disponible:', e);
+}
+
+// Funciones Firebase
+function saveToFirebase(category, subCategory, lang, hasCustomMessage) {
+    if (!database) return;
+    try {
+        const timestamp = Date.now();
+        const messageData = { category, subCategory, lang, hasCustomMessage, timestamp, date: new Date().toISOString() };
+        database.ref('messages').push(messageData);
+        database.ref('stats/totalMessages').transaction((current) => (current || 0) + 1);
+        database.ref(`stats/categories/${category}`).transaction((current) => (current || 0) + 1);
+        database.ref(`stats/languages/${lang}`).transaction((current) => (current || 0) + 1);
+    } catch(e) {}
+}
+
+function recordViewFirebase() {
+    if (!database) return;
+    try {
+        database.ref('stats/totalViews').transaction((current) => (current || 0) + 1);
+        database.ref('views').push({ timestamp: Date.now(), date: new Date().toISOString() });
+    } catch(e) {}
+}
 
 // ═══════════════════════════════════════════════════════════════
-// VARIABLES GLOBALES
-// ═══════════════════════════════════════════════════════════════
-let currentLang='es', audioCtx, musicMode='off';
-let statsClicks=0, statsTimer=null;
-let tapCount=0, hugCount=0, noMoveCount=0, triviaAnswered=false;
-
-// ═══════════════════════════════════════════════════════════════
-// CONFIG - 4 IDIOMAS COMPLETOS
+// CONFIG
 // ═══════════════════════════════════════════════════════════════
 const config = {
 
@@ -44,6 +62,8 @@ es: {
     amor:     ['Crush','Pareja','Novio/a','Amor Platónico','Esposa/o'],
     familiar: ['Mamá','Papá','Hermano/a','Tío/a','Primo/a','Abuela/o']
   },
+
+  // Categorías cuyo saludo NO debe revelar al remitente
   privateGreeting: ['Crush','Amor Platónico'],
   privateGreetingText: '¡Para ti! De: Alguien especial 💌',
 
@@ -95,6 +115,7 @@ es: {
     }
   },
 
+  // ── JUEGOS únicos por sub-categoría ──
   games: {
     amor: {
       'Crush':          { question:'¿Te gustó la sorpresa? 🌟', yesBtn:'¡Sí! ✨', noBtn:'Nop', noSurrender:'💫 ¡Me alegra!', celebrateText:'¡Qué bien! 🥰', celebrateSub:'¡Alguien especial pensó en ti hoy! 💝' },
@@ -112,49 +133,131 @@ es: {
     familiar: {
       'Mamá':     { title:'¡Paga tu deuda de abrazos, mami! 🤗', emoji:'🤗', target:7, progress:'Abrazos a mamá: {n} / {total}',    done:'¡Deuda con mamá saldada! La quiero mucho ❤️' },
       'Papá':     { title:'¡Chócala con papá! 👊', emoji:'👊',  target:5, progress:'Choques con papá: {n} / {total}', done:'¡Eso es papá! ¡Los mejores! 💙👊' },
-      'Hermano/a':{ title:'¡Pelea de almohadas virtual! 🥊', emoji:'🥊', target:6, progress:'Almohazos: {n} / {total}', done:'¡Victoria! ¡Los hermanos son forever! 🎉' },
-      'Tío/a':    { title:'¡High five con tu tío/a favorito/a! 🙌', emoji:'🙌', target:5, progress:'High fives: {n} / {total}', done:'¡Eres el/la mejor! 🙌✨' },
-      'Primo/a':  { title:'¡Juego de palmas con tu primo/a! 👏', emoji:'👏', target:8, progress:'Palmas: {n} / {total}', done:'¡Primos forever! 🎊👏' },
-      'Abuela/o': { title:'¡Envía besos a la abuela/o! 😘', emoji:'😘', target:10, progress:'Besos enviados: {n} / {total}', done:'¡Abrazos virtuales recibidos! 🥰❤️' }
+      'Hermano/a':{ title:'¡El clásico entre hermanos! 👈', emoji:'👈', target:4, progress:'Jaloneos: {n} / {total}',        done:'¡Hermanos inseparables! 🤝❤️' },
+      'Tío/a':    { title:'¡El abrazo del tío/a favorito/a! 🤗', emoji:'🤗', target:3, progress:'Abrazos: {n} / {total}',        done:'¡Tío/a favorito/a confirmado/a! 🏆❤️' },
+      'Primo/a':  { title:'¡El apretón de primos! ✊', emoji:'✊',  target:6, progress:'Apretones de primo/a: {n} / {total}', done:'¡Los mejores primos del mundo! 🎉❤️' },
+      'Abuela/o': { title:'¡Un abrazo virtual para la abuela/o! 🥰', emoji:'🥰', target:6, progress:'Mimos: {n} / {total}',      done:'¡La abuela/o ya siente el amor! 💝' }
     }
   },
 
+  tapTitle:'Tienes una sorpresa', tapSub:'Alguien pensó en ti hoy 💕', tapBtn:'¡Abrir! 💝', tapHint:'🔊 Activa el sonido para la experiencia completa',
+  greeting:'¡Para mi {sub}!',
+  shareBtn:'💌 ¡Quiero enviarle esto a alguien!', shareSub:'Crea tu propia sorpresa personalizada →',
+  donationBtn:'☕ Invitar un café al creador',
+  donation:'⚠️ ERROR DE TRANSACCIÓN:\n\nEl sistema de pagos se ha bloqueado porque el programador aún no tiene edad legal para tener cuenta bancaria.\n\n¡Mejor regálale un chocolate! 🍫🍭',
+  copied:'✓ COPIADO',
+  statsResult:'📊 ESTADÍSTICAS (desde este dispositivo)\n\n🆔 Tu ID: {did}\n👆 Tus visitas: {myvisits}\n🔗 Links que generaste: {mylinks}\n\n💡 Tus propias aperturas no afectan a las métricas del mañana si filtras por tu ID.',
+  statsError:'No se pudieron cargar las estadísticas.',
   trivia: {
     question: '🤔 ¿Por qué se celebra el 14 de febrero?',
-    options: [
-      '❤️ Por San Valentín, mártir romano',
-      '❄️ Porque es el día más frío del año',
-      '🎁 Lo inventó Hallmark en los años 20'
-    ],
-    right: '¡Correcto! 🎉 San Valentín fue un sacerdote romano que casaba parejas en secreto.',
-    wrong: '¡No exactamente! 😅 Se celebra por San Valentín, un mártir romano del siglo III.'
+    options: ['❤️ Por San Valentín, mártir romano', '❄️ Porque es el día más frío del año', '🎁 Lo inventó Hallmark en los años 20'],
+    correct: 0,
+    right: '¡Correcto! 🎉 San Valentín fue un sacerdote romano que casaba parejas en secreto en el siglo III. ¡Por eso celebramos el amor hoy! ❤️',
+    wrong:  '¡Casi! 😅 La respuesta correcta es: San Valentín, un mártir romano del siglo III que casaba parejas en secreto. ¡Ya sabes para la próxima! 💪'
   },
-
-  // UI labels
-  title: 'MENSAJERÍA VIP',
-  desc: 'Personaliza tu envío 💕',
-  lblRel: 'Tipo de relación',
-  lblDest: '¿Para quién es?',
-  lblMsg: 'Tu mensaje especial',
-  lblOpt: '✨ Opcional',
-  lblHint: '💡 Si lo dejas vacío se usará un mensaje bonito por defecto',
-  btnGenerate: 'Generar Link 🚀',
-  lblResult: '✅ ¡Tu link está listo!',
-  btnCopy: 'COPIAR',
-  tapTitle: 'Tienes una sorpresa',
-  tapSub: 'Alguien pensó en ti hoy 💕',
-  tapBtn: '¡Abrir! 💝',
-  tapHint: '🔊 Activa el sonido para la experiencia completa',
-  btnShare: '💌 ¡Quiero enviarle esto a alguien!',
-  shareSub: 'Crea tu propia sorpresa personalizada →',
-  btnDonation: '☕ Invitar un café al creador',
-  statsFooter: 'Hecho con ❤️ amor',
-  copied: '¡Copiado! ✅',
-  donation: '😂 ¡Me encantaría un café! Pero en serio, lo que más me alegra es que te haya gustado. ¡Compártelo con quien quieras! ❤️',
-  statsResult: '📊 ESTADÍSTICAS\n\n🆔 Tu ID: {did}\n📥 Tus visitas: {myvisits}\n📤 Tus links creados: {mylinks}\n\n💡 Esto se guarda solo en tu dispositivo.'
+  ui: {
+    title:'MENSAJERÍA VIP', desc:'Personaliza tu envío 💝', gen:'Generar Link 🚀',
+    rel:'Tipo de relación', dest:'¿Para quién es?', msg:'Tu mensaje especial',
+    msgOpt:'✨ Opcional', msgHint:'💡 Si lo dejas vacío se usará un mensaje bonito por defecto',
+    msgHolder:'Escribe algo especial para esa persona... 💕', copy:'COPIAR', result:'✅ ¡Tu link está listo! Cópialo y envíalo:'
+  }
 },
 
 // ─── ENGLISH ──────────────────────────────────────────────────
+en: {
+  categories: { amistad:'Friendship 🤝', amor:'Love ❤️', familiar:'Family 🏠' },
+  sub: {
+    amistad:  ['Friend','Best Friend','Partner in crime','Soul sibling'],
+    amor:     ['Crush','Partner','Boyfriend/Girlfriend','Platonic love','Spouse'],
+    familiar: ['Mom','Dad','Sibling','Uncle/Aunt','Cousin','Grandma/pa']
+  },
+  privateGreeting: ['Crush','Platonic love'],
+  privateGreetingText: 'For you! From: Someone special 💌',
+  trolleos: {
+    amistad: {
+      'Friend':           '> ACCESS: Scanning shared history...\n> Found: 47 embarrassing photos from 2023... 📸\n> Uploading to Instagram Stories automatically...\n> Sending screenshots to ALL your contacts...\n> Process completed on all devices!\n> Status: PUBLISHED — 100% COMPLETE ✓',
+      'Best Friend':      '> BETRAYAL MODE: MAXIMUM level activated...\n> Accessing shared secrets... 🤫\n> Gathering: "what you told me not to tell anyone"\n> Exporting to family WhatsApp group...\n> Attaching: voice notes + unfiltered photos + confessions...\n> Status: SENT TO 23 PEOPLE ✓',
+      'Partner in crime': '> ACTIVE INVESTIGATION: File No. 4829...\n> Recovering: all shared adventures... 🕵️\n> Listing: lies told to parents = 47\n> Compiling: evidence of every recorded prank...\n> Sending report to [Competent Authority]...\n> Status: FILE COMPLETED ⚠️',
+      'Soul sibling':     '> EMOTIONAL BOND ANALYSIS...\n> Existential crises solved together = 847 📊\n> Calculating: hours of late-night calls = 2,400 hrs\n> Counting: "are you still awake?" messages sent = 1,203\n> Presenting accumulated emotional bill... 💸\n> Status: EMOTIONAL DEBT — UNPAYABLE ❤️'
+    },
+    amor: {
+      'Crush':            '> MAXIMUM ALERT: Confession in progress...\n> Drafting: "I really like you, like a lot" 💌\n> Recipients: [name] + entire school + their parents 😱\n> Attaching: screenshots of your stalk sessions 2023-2024...\n> Notifying: their friends, family and exes...\n> Status: SENT — NO TAKE-BACKS POSSIBLE ✓',
+      'Partner':          '> ALERT: Updating relationship status on ALL platforms...\n> Publishing: 47 unfiltered photos of you two... 📸\n> Activating: "read aloud" mode for your voice messages...\n> Sending location history to their ex... 📍\n> Organizing: urgent family meeting for both sides...\n> Status: RELATIONSHIP 100% EXPOSED ✓',
+      'Boyfriend/Girlfriend': '> PROCESSING: Mass marriage proposal...\n> Drafting: "Will you marry me?" to all your exes... 💍\n> Booking: wedding venue + church + catering...\n> Notifying: in-laws, siblings and extended family...\n> Date published on social media: Feb 14 — Non-refundable\n> Status: WEDDING PUBLICLY CONFIRMED ✓',
+      'Platonic love':    '> SILENT CONFESSION MODE ACTIVATED...\n> Collecting: 847 times you checked their profile... 👀\n> Compiling: likes on photos from 2018 and earlier...\n> Exporting: screenshots of their private stories...\n> Sending to: them + their closest friends group\n> Status: STALKING OFFICIALLY CONFIRMED ✓',
+      'Spouse':           '> HOUSEHOLD AUDIT IN PROGRESS...\n> Counting: times you left dishes in the sink 🍽️\n> Listing: "was going to say but didn\'t" = 1,847\n> Detected: 3,847 "what are you thinking?" unanswered...\n> Emotional bill: $12,500 in words never said 💸\n> Status: UNPRECEDENTED EMOTIONAL DEBT ⚠️'
+    },
+    familiar: {
+      'Mom':       '> SYSTEM: Accumulated hug debt detected...\n> Auditing: unanswered calls this month = 47... 📞\n> Counting: "I already ate" while lying = 203 times\n> Blocking: access to clean clothes + home food...\n> Sending report to: dad + grandparents + family group...\n> Status: NO MATERNAL SUPPORT — BLOCKED ⚠️',
+      'Dad':       '> PROCESSING: Outstanding parenting bill...\n> Calculating: ignored life lessons = $15,000 USD 🚗\n> Adding up: unheeded advice × years = 2,400 💡\n> Detecting: times you said "I\'m coming" then took hours\n> Activating: "back in my day..." auto-reminder\n> Status: PARENTING BILL — UNPAYABLE 💸',
+      'Sibling':   '> FAMILY SNITCH MODE ACTIVATED...\n> Accessing: secrets you confided in me... 🤫\n> Preparing: the time you came home late + your excuses\n> Compiling: most embarrassing childhood album photos...\n> Sending to: family group + your friends group...\n> Status: RATTED OUT IN REAL TIME ✓',
+      'Uncle/Aunt':'> ANALYZING: Family tree...\n> Calculating: favorite among all nieces/nephews... 🏆\n> System result: YOU ARE NOT THE FAVORITE 🫢\n> Preparing: announcement for next family gathering\n> Listing: other nieces/nephews impressive achievements...\n> Status: OFFICIAL FAVORITE — IDENTIFIED ✓',
+      'Cousin':    '> SCANNING: Shared family album on the cloud...\n> Found: birthday photo with cake on your face 🎂\n> Recovered: the school play video from 2009...\n> Uploading to: Instagram + Facebook + WhatsApp groups...\n> Tagging: all extended family + friends...\n> Status: FAMILY EMBARRASSMENT — NOW VIRAL ✓',
+      'Grandma/pa':'> ALERT: Grandchild in critical nutrition situation...\n> Detected: 3 days without homemade food... 🍲\n> Measuring: hours without grandparent hug = 72 hours\n> Calculating: pending cheek kisses = 15 🥰\n> Activating: grandparent care protocol...\n> Status: GRANDCHILD NEEDS ATTENTION — CALL INCOMING ❤️'
+    }
+  },
+  final: {
+    amistad: {
+      'Friend':           'Just a prank! 😂 I just wanted to remind you that you\'re an incredible friend. Thanks for always being there, for the support and for putting up with me. Love you tons! 🤝❤️',
+      'Best Friend':      'I would NEVER betray our secrets! 😂 You\'re the person I chose and I\'m so glad I chose so well. You are my best friend and that is priceless. Love you! 💙',
+      'Partner in crime': 'Just a prank, partner! 😂 Thanks for being my partner in crime. For all the shared adventures, invented excuses and moments only we understand. You are irreplaceable! 🕵️❤️',
+      'Soul sibling':     'Gotcha! 😂 No invoice can pay for what you mean to me. We chose to be family even though blood doesn\'t bind us, and that makes it even more special. You are my soul sibling. ❤️✨'
+    },
+    amor: {
+      'Crush':            'Almost got you! 😜 Just a prank from someone who admires you in silence. You\'re an incredibly special person and the world is better with you in it. Happy Feb 14! 💕',
+      'Partner':          'Got you! 😂 Just a prank, love. Everything we share is ours and ours alone. Thank you for being my favorite person in this whole wide world. Love you so much! 💕',
+      'Boyfriend/Girlfriend': 'Breathe! 😂 No surprise wedding (yet 😏). I just wanted to remind you that you\'re the most important person in my life. Happy Valentine\'s Day! ❤️',
+      'Platonic love':    'Take it easy! 😅 Just a prank from someone who thinks you\'re amazing. You have unique energy and hopefully that someone will find the courage to tell you someday. ✨💕',
+      'Spouse':           'Scaredy-cat! 😂 You know I\'d never do that. I just wanted to remind you that you\'re my favorite person, my home and my favorite adventure. Love you! 💕🏠'
+    },
+    familiar: {
+      'Mom':       'We got you! 😅 Just a prank. There are no words to thank you for everything you\'ve given me. You\'re the most incredible person I know. Love you with all my heart, Mom! ❤️',
+      'Dad':       'Got you! 😂 Just a prank. There\'s no way to repay everything you\'ve taught me. Thanks for being my guide, my reference and my example. Love you so much, Dad! 💙',
+      'Sibling':   'Just a prank! 😂 Even if I tease you, I\'d never actually do that. You\'re one of the best things in my life. Thanks for being my partner in crime and my support. Love you! 🤝❤️',
+      'Uncle/Aunt':'Got you! 😂 Just a prank. You\'re definitely the favorite (don\'t tell the others!). Thanks for the advice and for always being there when I need you. Love you! ❤️',
+      'Cousin':    'Just a prank! 😂 The photos are safe, I promise. Thanks for being part of the best childhood memories and for still being important in my life. Love you, cuz! 🎉❤️',
+      'Grandma/pa':'Everything\'s fine, relax! 😊 Just a prank. You\'re one of the most important people in my life. Thanks for so much love, wisdom and home cooking. Love you infinitely! ❤️'
+    }
+  },
+  games: {
+    amor: {
+      'Crush':            { question:'Did you like the surprise? 🌟', yesBtn:'Yes! ✨', noBtn:'Nope', noSurrender:'💫 Glad you liked it!', celebrateText:'Wonderful! 🥰', celebrateSub:'Someone special was thinking of you today! 💝' },
+      'Partner':          { question:'Do you forgive me for the prank? 🥺', yesBtn:'Yes ❤️', noBtn:'NO', noSurrender:'💕 I love you anyway!', celebrateText:'I knew it! 🥰', celebrateSub:'Thanks for forgiving me! Love you! ❤️' },
+      'Boyfriend/Girlfriend': { question:'Do you forgive me? Do you still love me? 🥺', yesBtn:'Always! ❤️', noBtn:'Hmm...', noSurrender:'💕 You can\'t stop loving me!', celebrateText:'I knew you would! 🥰', celebrateSub:'You\'re the best! Love you ❤️' },
+      'Platonic love':    { question:'Was the surprise worth opening? 🌸', yesBtn:'Yes! 💕', noBtn:'Not sure', noSurrender:'💫 You know it was!', celebrateText:'Perfect! 🥰', celebrateSub:'Someone was thinking of you today! ✨💕' },
+      'Spouse':           { question:'Do you forgive me, my love? 🥺', yesBtn:'This time, yes ❤️', noBtn:'Hmm...', noSurrender:'💕 Of course you do!', celebrateText:'What a relief! 🥰', celebrateSub:'Thanks for still choosing me! ❤️' }
+    },
+    amistad: {
+      'Friend':           { title:'Prove we\'re real friends! 🤝', emoji:'🤜', target:7,  progress:'Handshakes: {n} / {total}',       done:'Friendship confirmed! The best! 🤝💕' },
+      'Best Friend':      { title:'Best friends shake harder! 💪', emoji:'🤜', target:10, progress:'Power handshakes: {n} / {total}', done:'Unbeatable! The perfect duo! 💙🤜' },
+      'Partner in crime': { title:'The secret partners handshake! 🤫', emoji:'🤫', target:5, progress:'Secret shakes: {n} / {total}',  done:'Mission accomplished, partner! 🕵️✅' },
+      'Soul sibling':     { title:'Soul siblings always connect! ❤️', emoji:'🤝', target:8,  progress:'Connections: {n} / {total}',   done:'Eternal bond confirmed! ❤️✨' }
+    },
+    familiar: {
+      'Mom':       { title:'Pay your hug debt, Mom! 🤗', emoji:'🤗', target:7, progress:'Hugs for Mom: {n} / {total}', done:'Mom\'s hug debt cleared! Love you ❤️' },
+      'Dad':       { title:'High five with Dad! 👊', emoji:'👊',  target:5, progress:'High fives with Dad: {n} / {total}', done:'That\'s my Dad! The best! 💙👊' },
+      'Sibling':   { title:'Classic sibling stuff! 👈', emoji:'👈', target:4, progress:'Sibling pokes: {n} / {total}', done:'Inseparable siblings! 🤝❤️' },
+      'Uncle/Aunt':{ title:'A hug from the favorite uncle/aunt! 🤗', emoji:'🤗', target:3, progress:'Hugs: {n} / {total}', done:'Favorite uncle/aunt confirmed! 🏆❤️' },
+      'Cousin':    { title:'The cousin handshake! ✊', emoji:'✊',  target:6, progress:'Cousin fist bumps: {n} / {total}', done:'Best cousins in the world! 🎉❤️' },
+      'Grandma/pa':{ title:'A virtual hug for grandma/pa! 🥰', emoji:'🥰', target:6, progress:'Warm fuzzies: {n} / {total}', done:'Grandma/pa feels all the love! 💝' }
+    }
+  },
+  tapTitle:'You have a surprise', tapSub:'Someone was thinking of you today 💕', tapBtn:'Open it! 💝', tapHint:'🔊 Turn on sound for the full experience',
+  greeting:'For my {sub}!',
+  shareBtn:'💌 I want to send this to someone!', shareSub:'Create your own personalized surprise →',
+  donationBtn:'☕ Buy the creator a coffee',
+  donation:'⚠️ TRANSACTION ERROR:\n\nPayment system is locked because the developer is not legally old enough to have a bank account.\n\nSend chocolate instead! 🍫🍭',
+  copied:'✓ COPIED',
+  statsResult:'📊 STATS (this device)\n\n🆔 Your ID: {did}\n👆 Your visits: {myvisits}\n🔗 Links you generated: {mylinks}\n\n💡 Your own opens won\'t affect tomorrow\'s metrics if you filter by your ID.',
+  statsError:'Could not load statistics.',
+  trivia: {
+    question: '🤔 Why is February 14th celebrated?',
+    options: ['❤️ For Saint Valentine, a Roman martyr', '❄️ Because it\'s the coldest day of the year', '🎁 Hallmark invented it in the 1920s'],
+    correct: 0,
+    right: 'Correct! 🎉 Saint Valentine was a Roman priest who secretly married couples in the 3rd century. That\'s why we celebrate love today! ❤️',
+    wrong:  'Almost! 😅 The correct answer is: Saint Valentine, a Roman martyr from the 3rd century who married couples in secret. Now you know! 💪'
+
+// ─── ENGLISH (NUEVO) ──────────────────────────────────────────
 en: {
   categories: { amistad:'Friendship 🤝', amor:'Love ❤️', familiar:'Family 🏠' },
   sub: {
@@ -164,12 +267,11 @@ en: {
   },
   privateGreeting: ['Crush','Secret Love'],
   privateGreetingText: 'For you! From: Someone special 💌',
-
   trolleos: {
     amistad: {
       'Friend':            '> ACCESS: Scanning shared history...\n> Found: 47 embarrassing photos from 2023... 📸\n> Uploading to Instagram Stories automatically...\n> Sending screenshots to ALL your contacts...\n> Process completed on all devices!\n> Status: PUBLISHED — 100% COMPLETE ✓',
       'Best Friend':       '> BETRAYAL MODE: MAXIMUM level activated...\n> Accessing shared secrets... 🤫\n> Collecting: "what you told me not to tell anyone"\n> Exporting to family WhatsApp group...\n> Attaching: voice messages + unfiltered photos + confessions...\n> Status: SENT TO 23 PEOPLE ✓',
-      'Partner in Crime':  '> ACTIVE INVESTIGATION: File N°4829...\n> Recovering: all shared adventures... 🕵️\n> Listing: excuses given to parents = 47\n> Compiling: evidence of every mischief recorded...\n> Sending report to [Competent Authority]...\n> Status: FILE COMPLETE ⚠️',
+      'Partner in Crime':  '> ACTIVE INVESTIGATION: File N°4829...\n> Recovering: all shared adventures... 🕵️\n> Listing: excuses given to parents = 47\n> Compiling: evidence of every recorded mischief...\n> Sending report to [Competent Authority]...\n> Status: FILE COMPLETE ⚠️',
       'Soul Sibling':      '> EMOTIONAL BOND ANALYSIS...\n> Existential crises solved together = 847 📊\n> Calculating: hours of late-night calls = 2,400 hrs\n> Counting: "are you still awake?" sent = 1,203\n> Presenting accumulated emotional invoice... 💸\n> Status: EMOTIONAL DEBT — UNPAYABLE ❤️'
     },
     amor: {
@@ -188,7 +290,6 @@ en: {
       'Grandparent':'> ALERT: Grandchild in critical nutritional situation...\n> Detected: 3 days without chicken soup... 🍲\n> Measuring: hours without grandparent hug = exactly 72 hours\n> Calculating: pending cheek kisses = 15 🥰\n> Activating: urgent grandparent care protocol...\n> Status: GRANDCHILD NEEDS ATTENTION — CALL ON THE WAY ❤️'
     }
   },
-
   final: {
     amistad: {
       'Friend':            'It was a joke! 😂 I just wanted to remind you that you\'re an amazing friend. Thanks for always being there, for the support and for putting up with me on my difficult days. I love you so much! 🤝❤️',
@@ -212,66 +313,42 @@ en: {
       'Grandparent':'Rest easy, everything is fine! 😊 It was a joke. You\'re one of the most important people in my life. Thanks for so much love, wisdom and chicken soup. I love you infinitely! ❤️'
     }
   },
-
   games: {
     amor: {
       'Crush':          { question:'Did you like the surprise? 🌟', yesBtn:'Yes! ✨', noBtn:'Nope', noSurrender:'💫 I\'m glad!', celebrateText:'So nice! 🥰', celebrateSub:'Someone special thought of you today! 💝' },
-      'Partner':        { question:'Do you forgive me for the joke? 🥺', yesBtn:'Yes ❤️',   noBtn:'NO',   noSurrender:'💕 I love you anyway!', celebrateText:'I knew it! 🥰', celebrateSub:'Thanks for forgiving me! I love you so much ❤️' },
+      'Partner':        { question:'Do you forgive me for the joke? 🥺', yesBtn:'Yes ❤️', noBtn:'NO', noSurrender:'💕 I love you anyway!', celebrateText:'I knew it! 🥰', celebrateSub:'Thanks for forgiving me! I love you so much ❤️' },
       'Boyfriend/Girlfriend': { question:'Do you forgive me? Do you still love me? 🥺', yesBtn:'Always! ❤️', noBtn:'Hmm...', noSurrender:'💕 You can\'t stop loving me!', celebrateText:'I knew it! 🥰', celebrateSub:'You\'re the best! I love you ❤️' },
       'Secret Love':    { question:'Was it worth opening the surprise? 🌸', yesBtn:'Yes! 💕', noBtn:'Don\'t know', noSurrender:'💫 Bet it was!', celebrateText:'Perfect! 🥰', celebrateSub:'Someone thinks of you today! ✨💕' },
       'Spouse':         { question:'Do you forgive me, my love? 🥺', yesBtn:'This time yes ❤️', noBtn:'Let\'s see...', noSurrender:'💕 Of course!', celebrateText:'What a relief! 🥰', celebrateSub:'Thanks for still choosing me! ❤️' }
     },
     amistad: {
-      'Friend':            { title:'Prove we\'re friends! 🤝', emoji:'🤜', target:7,  progress:'Fist bumps: {n} / {total}',         done:'Friendship confirmed! The best! 🤝💕' },
+      'Friend':            { title:'Prove we\'re friends! 🤝', emoji:'🤜', target:7, progress:'Fist bumps: {n} / {total}', done:'Friendship confirmed! The best! 🤝💕' },
       'Best Friend':       { title:'Best friends bump harder! 💪', emoji:'🤜', target:10, progress:'Mega-bumps: {n} / {total}', done:'Unbeatable! The perfect duo! 💙🤜' },
-      'Partner in Crime':  { title:'The secret handshake of accomplices! 🤫', emoji:'🤫', target:5,  progress:'Secret bumps: {n} / {total}', done:'Mission accomplished, partner! 🕵️✅' },
-      'Soul Sibling':      { title:'Soul siblings always connect! ❤️', emoji:'🤝', target:8,  progress:'Connections: {n} / {total}',   done:'Eternal bond confirmed! ❤️✨' }
+      'Partner in Crime':  { title:'The secret handshake of accomplices! 🤫', emoji:'🤫', target:5, progress:'Secret bumps: {n} / {total}', done:'Mission accomplished, partner! 🕵️✅' },
+      'Soul Sibling':      { title:'Soul siblings always connect! ❤️', emoji:'🤝', target:8, progress:'Connections: {n} / {total}', done:'Eternal bond confirmed! ❤️✨' }
     },
     familiar: {
-      'Mom':        { title:'Pay your hug debt, mom! 🤗', emoji:'🤗', target:7, progress:'Hugs to mom: {n} / {total}',    done:'Debt to mom paid! Love you so much ❤️' },
-      'Dad':        { title:'High five with dad! 👊', emoji:'👊',  target:5, progress:'Bumps with dad: {n} / {total}', done:'That\'s dad! The best! 💙👊' },
+      'Mom':        { title:'Pay your hug debt, mom! 🤗', emoji:'🤗', target:7, progress:'Hugs to mom: {n} / {total}', done:'Debt to mom paid! Love you so much ❤️' },
+      'Dad':        { title:'High five with dad! 👊', emoji:'👊', target:5, progress:'Bumps with dad: {n} / {total}', done:'That\'s dad! The best! 💙👊' },
       'Sibling':    { title:'Virtual pillow fight! 🥊', emoji:'🥊', target:6, progress:'Pillow hits: {n} / {total}', done:'Victory! Siblings are forever! 🎉' },
       'Uncle/Aunt': { title:'High five with your favorite uncle/aunt! 🙌', emoji:'🙌', target:5, progress:'High fives: {n} / {total}', done:'You\'re the best! 🙌✨' },
       'Cousin':     { title:'Clapping game with your cousin! 👏', emoji:'👏', target:8, progress:'Claps: {n} / {total}', done:'Cousins forever! 🎊👏' },
       'Grandparent':{ title:'Send kisses to grandma/grandpa! 😘', emoji:'😘', target:10, progress:'Kisses sent: {n} / {total}', done:'Virtual hugs received! 🥰❤️' }
     }
   },
-
-  trivia: {
-    question: '🤔 Why is February 14th celebrated?',
-    options: [
-      '❤️ For St. Valentine, Roman martyr',
-      '❄️ Because it\'s the coldest day of the year',
-      '🎁 Hallmark invented it in the 20s'
-    ],
-    right: 'Correct! 🎉 St. Valentine was a Roman priest who married couples in secret.',
-    wrong: 'Not exactly! 😅 It\'s celebrated for St. Valentine, a 3rd century Roman martyr.'
+  trivia: { question: '🤔 Why is February 14th celebrated?', options: ['❤️ For St. Valentine, Roman martyr', '❄️ Because it\'s the coldest day of the year', '🎁 Hallmark invented it in the 20s'], right: 'Correct! 🎉 St. Valentine was a Roman priest who married couples in secret.', wrong: 'Not exactly! 😅 It\'s celebrated for St. Valentine, a 3rd century Roman martyr.' },
+  ui: {
+    title:'VIP MESSAGING', desc:'Customize your send 💕', gen:'Generate Link 🚀',
+    rel:'Relationship type', dest:'Who is it for?', msg:'Your special message',
+    msgOpt:'✨ Optional', msgHint:'💡 If you leave it empty, a nice default message will be used',
+    msgHolder:'Write something special for this person... 💕', copy:'COPY', result:'✅ Your link is ready! Copy and send it:'
   },
-
-  title: 'VIP MESSAGING',
-  desc: 'Customize your send 💕',
-  lblRel: 'Relationship type',
-  lblDest: 'Who is it for?',
-  lblMsg: 'Your special message',
-  lblOpt: '✨ Optional',
-  lblHint: '💡 If you leave it empty, a nice default message will be used',
-  btnGenerate: 'Generate Link 🚀',
-  lblResult: '✅ Your link is ready!',
-  btnCopy: 'COPY',
-  tapTitle: 'You have a surprise',
-  tapSub: 'Someone thought of you today 💕',
-  tapBtn: 'Open it! 💝',
-  tapHint: '🔊 Turn on sound for the complete experience',
-  btnShare: '💌 I want to send this to someone!',
-  shareSub: 'Create your own personalized surprise →',
-  btnDonation: '☕ Buy the creator a coffee',
-  statsFooter: 'Made with ❤️ love',
   copied: 'Copied! ✅',
   donation: '😂 I\'d love a coffee! But seriously, what makes me happiest is that you liked it. Share it with whoever you want! ❤️',
   statsResult: '📊 STATISTICS\n\n🆔 Your ID: {did}\n📥 Your visits: {myvisits}\n📤 Your created links: {mylinks}\n\n💡 This is saved only on your device.'
 },
 
-// ─── FRANÇAIS ──────────────────────────────────────────────────
+// ─── FRANÇAIS (NUEVO) ──────────────────────────────────────────
 fr: {
   categories: { amistad:'Amitié 🤝', amor:'Amour ❤️', familiar:'Famille 🏠' },
   sub: {
@@ -281,7 +358,6 @@ fr: {
   },
   privateGreeting: ['Crush','Amour Platonique'],
   privateGreetingText: 'Pour toi! De: Quelqu\'un de spécial 💌',
-
   trolleos: {
     amistad: {
       'Ami(e)':            '> ACCÈS: Scan de l\'historique partagé...\n> Trouvé: 47 photos embarrassantes de 2023... 📸\n> Téléchargement automatique sur Instagram Stories...\n> Envoi de captures à TOUS vos contacts...\n> Processus terminé sur tous les appareils!\n> Statut: PUBLIÉ — 100% TERMINÉ ✓',
@@ -305,7 +381,6 @@ fr: {
       'Grand-parent':'> ALERTE: Petit-enfant en situation nutritionnelle critique...\n> Détecté: 3 jours sans soupe au poulet... 🍲\n> Mesure: heures sans câlin de grand-parent = exactement 72 heures\n> Calcul: bisous sur la joue en attente = 15 🥰\n> Activation: protocole de soins urgents grands-parents...\n> Statut: PETIT-ENFANT A BESOIN D\'ATTENTION — APPEL EN CHEMIN ❤️'
     }
   },
-
   final: {
     amistad: {
       'Ami(e)':            'C\'était une blague! 😂 Je voulais juste te rappeler que tu es un(e) ami(e) incroyable. Merci d\'être toujours là, pour le soutien et de me supporter dans mes jours difficiles. Je t\'aime beaucoup! 🤝❤️',
@@ -329,66 +404,42 @@ fr: {
       'Grand-parent':'Repose-toi, tout va bien! 😊 C\'était une blague. Tu es l\'une des personnes les plus importantes de ma vie. Merci pour tant d\'amour, de sagesse et de soupe au poulet. Je t\'aime infiniment! ❤️'
     }
   },
-
   games: {
     amor: {
       'Crush':          { question:'Tu as aimé la surprise? 🌟', yesBtn:'Oui! ✨', noBtn:'Non', noSurrender:'💫 Je suis content(e)!', celebrateText:'Que c\'est bien! 🥰', celebrateSub:'Quelqu\'un de spécial a pensé à toi aujourd\'hui! 💝' },
-      'Partenaire':     { question:'Tu me pardonnes la blague? 🥺', yesBtn:'Oui ❤️',   noBtn:'NON',   noSurrender:'💕 Je t\'aime quand même!', celebrateText:'Je le savais! 🥰', celebrateSub:'Merci de me pardonner! Je t\'aime beaucoup ❤️' },
+      'Partenaire':     { question:'Tu me pardonnes la blague? 🥺', yesBtn:'Oui ❤️', noBtn:'NON', noSurrender:'💕 Je t\'aime quand même!', celebrateText:'Je le savais! 🥰', celebrateSub:'Merci de me pardonner! Je t\'aime beaucoup ❤️' },
       'Petit(e) Ami(e)':{ question:'Tu me pardonnes? Tu m\'aimes encore? 🥺', yesBtn:'Toujours! ❤️', noBtn:'Hmm...', noSurrender:'💕 Tu ne peux pas arrêter de m\'aimer!', celebrateText:'Je le savais! 🥰', celebrateSub:'Tu es le/la meilleur(e)! Je t\'aime ❤️' },
       'Amour Platonique':{ question:'Ça valait la peine d\'ouvrir la surprise? 🌸', yesBtn:'Oui! 💕', noBtn:'Je ne sais pas', noSurrender:'💫 Parie que oui!', celebrateText:'Parfait! 🥰', celebrateSub:'Quelqu\'un pense à toi aujourd\'hui! ✨💕' },
       'Époux/Épouse':   { question:'Tu me pardonnes, mon amour? 🥺', yesBtn:'Cette fois oui ❤️', noBtn:'On verra...', noSurrender:'💕 Bien sûr!', celebrateText:'Quel soulagement! 🥰', celebrateSub:'Merci de continuer à me choisir! ❤️' }
     },
     amistad: {
-      'Ami(e)':            { title:'Prouve qu\'on est ami(e)s! 🤝', emoji:'🤜', target:7,  progress:'Check: {n} / {total}',         done:'Amitié confirmée! Les meilleurs! 🤝💕' },
+      'Ami(e)':            { title:'Prouve qu\'on est ami(e)s! 🤝', emoji:'🤜', target:7, progress:'Check: {n} / {total}', done:'Amitié confirmée! Les meilleurs! 🤝💕' },
       'Meilleur(e) Ami(e)':{ title:'Les meilleurs frappent plus fort! 💪', emoji:'🤜', target:10, progress:'Méga-check: {n} / {total}', done:'Imbattables! Le duo parfait! 💙🤜' },
-      'Complice':          { title:'Le check secret des complices! 🤫', emoji:'🤫', target:5,  progress:'Check secrets: {n} / {total}', done:'Mission accomplie, complice! 🕵️✅' },
-      'Frère/Sœur d\'âme': { title:'Les frères/sœurs d\'âme se connectent toujours! ❤️', emoji:'🤝', target:8,  progress:'Connexions: {n} / {total}',   done:'Lien éternel confirmé! ❤️✨' }
+      'Complice':          { title:'Le check secret des complices! 🤫', emoji:'🤫', target:5, progress:'Check secrets: {n} / {total}', done:'Mission accomplie, complice! 🕵️✅' },
+      'Frère/Sœur d\'âme': { title:'Les frères/sœurs d\'âme se connectent toujours! ❤️', emoji:'🤝', target:8, progress:'Connexions: {n} / {total}', done:'Lien éternel confirmé! ❤️✨' }
     },
     familiar: {
-      'Maman':      { title:'Paye ta dette de câlins, maman! 🤗', emoji:'🤗', target:7, progress:'Câlins à maman: {n} / {total}',    done:'Dette à maman payée! Je t\'aime beaucoup ❤️' },
-      'Papa':       { title:'Tope là avec papa! 👊', emoji:'👊',  target:5, progress:'Tope avec papa: {n} / {total}', done:'C\'est ça papa! Les meilleurs! 💙👊' },
+      'Maman':      { title:'Paye ta dette de câlins, maman! 🤗', emoji:'🤗', target:7, progress:'Câlins à maman: {n} / {total}', done:'Dette à maman payée! Je t\'aime beaucoup ❤️' },
+      'Papa':       { title:'Tope là avec papa! 👊', emoji:'👊', target:5, progress:'Tope avec papa: {n} / {total}', done:'C\'est ça papa! Les meilleurs! 💙👊' },
       'Frère/Sœur': { title:'Bataille d\'oreillers virtuelle! 🥊', emoji:'🥊', target:6, progress:'Coups d\'oreiller: {n} / {total}', done:'Victoire! Les frères/sœurs c\'est pour toujours! 🎉' },
       'Oncle/Tante':{ title:'Tope là avec ton oncle/tante préféré(e)! 🙌', emoji:'🙌', target:5, progress:'Tope là: {n} / {total}', done:'Tu es le/la meilleur(e)! 🙌✨' },
       'Cousin(e)':  { title:'Jeu de mains avec ton cousin/ta cousine! 👏', emoji:'👏', target:8, progress:'Tapes: {n} / {total}', done:'Cousins pour toujours! 🎊👏' },
       'Grand-parent':{ title:'Envoie des bisous à grand-mère/père! 😘', emoji:'😘', target:10, progress:'Bisous envoyés: {n} / {total}', done:'Câlins virtuels reçus! 🥰❤️' }
     }
   },
-
-  trivia: {
-    question: '🤔 Pourquoi le 14 février est-il célébré?',
-    options: [
-      '❤️ Pour Saint-Valentin, martyr romain',
-      '❄️ Parce que c\'est le jour le plus froid de l\'année',
-      '🎁 Hallmark l\'a inventé dans les années 20'
-    ],
-    right: 'Correct! 🎉 Saint-Valentin était un prêtre romain qui mariait des couples en secret.',
-    wrong: 'Pas exactement! 😅 Il est célébré pour Saint-Valentin, un martyr romain du IIIe siècle.'
+  trivia: { question: '🤔 Pourquoi le 14 février est-il célébré?', options: ['❤️ Pour Saint-Valentin, martyr romain', '❄️ Parce que c\'est le jour le plus froid de l\'année', '🎁 Hallmark l\'a inventé dans les années 20'], right: 'Correct! 🎉 Saint-Valentin était un prêtre romain qui mariait des couples en secret.', wrong: 'Pas exactement! 😅 Il est célébré pour Saint-Valentin, un martyr romain du IIIe siècle.' },
+  ui: {
+    title:'MESSAGERIE VIP', desc:'Personnalise ton envoi 💕', gen:'Générer le lien 🚀',
+    rel:'Type de relation', dest:'Pour qui est-ce?', msg:'Ton message spécial',
+    msgOpt:'✨ Optionnel', msgHint:'💡 Si tu le laisses vide, un joli message par défaut sera utilisé',
+    msgHolder:'Écris quelque chose de spécial pour cette personne... 💕', copy:'COPIER', result:'✅ Ton lien est prêt! Copie-le et envoie-le:'
   },
-
-  title: 'MESSAGERIE VIP',
-  desc: 'Personnalise ton envoi 💕',
-  lblRel: 'Type de relation',
-  lblDest: 'Pour qui est-ce?',
-  lblMsg: 'Ton message spécial',
-  lblOpt: '✨ Optionnel',
-  lblHint: '💡 Si tu le laisses vide, un joli message par défaut sera utilisé',
-  btnGenerate: 'Générer le lien 🚀',
-  lblResult: '✅ Ton lien est prêt!',
-  btnCopy: 'COPIER',
-  tapTitle: 'Tu as une surprise',
-  tapSub: 'Quelqu\'un a pensé à toi aujourd\'hui 💕',
-  tapBtn: 'Ouvrir! 💝',
-  tapHint: '🔊 Active le son pour l\'expérience complète',
-  btnShare: '💌 Je veux envoyer ça à quelqu\'un!',
-  shareSub: 'Crée ta propre surprise personnalisée →',
-  btnDonation: '☕ Offrir un café au créateur',
-  statsFooter: 'Fait avec ❤️ amour',
   copied: 'Copié! ✅',
   donation: '😂 J\'adorerais un café! Mais sérieusement, ce qui me rend le plus heureux c\'est que ça t\'a plu. Partage-le avec qui tu veux! ❤️',
   statsResult: '📊 STATISTIQUES\n\n🆔 Ton ID: {did}\n📥 Tes visites: {myvisits}\n📤 Tes liens créés: {mylinks}\n\n💡 Ceci est sauvegardé uniquement sur ton appareil.'
 },
 
-// ─── PORTUGUÊS ────────────────────────────────────────────────
+// ─── PORTUGUÊS (NUEVO) ────────────────────────────────────────
 pt: {
   categories: { amistad:'Amizade 🤝', amor:'Amor ❤️', familiar:'Família 🏠' },
   sub: {
@@ -398,7 +449,6 @@ pt: {
   },
   privateGreeting: ['Paquera','Amor Platônico'],
   privateGreetingText: 'Para você! De: Alguém especial 💌',
-
   trolleos: {
     amistad: {
       'Amigo/a':            '> ACESSO: Escaneando histórico compartilhado...\n> Encontrado: 47 fotos constrangedoras de 2023... 📸\n> Carregando nos Stories do Instagram automaticamente...\n> Enviando capturas para TODOS os seus contatos...\n> Processo concluído em todos os dispositivos!\n> Status: PUBLICADO — 100% COMPLETO ✓',
@@ -422,7 +472,6 @@ pt: {
       'Avô/ó':    '> ALERTA: Neto/a em situação nutricional crítica...\n> Detectado: 3 dias sem comer sopa de frango... 🍲\n> Medindo: horas sem abraço de avô/ó = exatamente 72 horas\n> Calculando: beijos na bochecha pendentes = 15 🥰\n> Ativando: protocolo de cuidado urgente de avós...\n> Status: NETO/A PRECISA DE ATENÇÃO — LIGAÇÃO A CAMINHO ❤️'
     }
   },
-
   final: {
     amistad: {
       'Amigo/a':            'Era uma brincadeira! 😂 Só queria te lembrar que você é um/a amigo/a incrível. Obrigado por estar sempre lá, pelo apoio e por me aguentar nos meus dias difíceis. Te amo muito! 🤝❤️',
@@ -446,60 +495,36 @@ pt: {
       'Avô/ó':    'Descanse, está tudo bem! 😊 Era uma brincadeira. Você é uma das pessoas mais importantes da minha vida. Obrigado por tanto amor, sabedoria e sopa de frango. Te amo infinitamente! ❤️'
     }
   },
-
   games: {
     amor: {
       'Paquera':        { question:'Gostou da surpresa? 🌟', yesBtn:'Sim! ✨', noBtn:'Não', noSurrender:'💫 Que bom!', celebrateText:'Que legal! 🥰', celebrateSub:'Alguém especial pensou em você hoje! 💝' },
-      'Parceiro/a':     { question:'Me perdoa a brincadeira? 🥺', yesBtn:'Sim ❤️',   noBtn:'NÃO',   noSurrender:'💕 Te amo mesmo assim!', celebrateText:'Eu sabia! 🥰', celebrateSub:'Obrigado por me perdoar! Te amo muito ❤️' },
+      'Parceiro/a':     { question:'Me perdoa a brincadeira? 🥺', yesBtn:'Sim ❤️', noBtn:'NÃO', noSurrender:'💕 Te amo mesmo assim!', celebrateText:'Eu sabia! 🥰', celebrateSub:'Obrigado por me perdoar! Te amo muito ❤️' },
       'Namorado/a':     { question:'Me perdoa? Ainda me ama? 🥺', yesBtn:'Sempre! ❤️', noBtn:'Hmm...', noSurrender:'💕 Você não pode parar de me amar!', celebrateText:'Eu sabia! 🥰', celebrateSub:'Você é o/a melhor! Te amo ❤️' },
       'Amor Platônico': { question:'Valeu a pena abrir a surpresa? 🌸', yesBtn:'Sim! 💕', noBtn:'Não sei', noSurrender:'💫 Aposto que sim!', celebrateText:'Perfeito! 🥰', celebrateSub:'Alguém pensa em você hoje! ✨💕' },
       'Esposo/a':       { question:'Me perdoa, meu amor? 🥺', yesBtn:'Desta vez sim ❤️', noBtn:'Vamos ver...', noSurrender:'💕 Claro que sim!', celebrateText:'Que alívio! 🥰', celebrateSub:'Obrigado por continuar me escolhendo! ❤️' }
     },
     amistad: {
-      'Amigo/a':            { title:'Prove que somos amigos/as! 🤝', emoji:'🤜', target:7,  progress:'Socos: {n} / {total}',         done:'Amizade confirmada! Os melhores! 🤝💕' },
+      'Amigo/a':            { title:'Prove que somos amigos/as! 🤝', emoji:'🤜', target:7, progress:'Socos: {n} / {total}', done:'Amizade confirmada! Os melhores! 🤝💕' },
       'Melhor Amigo/a':     { title:'Os melhores batem mais forte! 💪', emoji:'🤜', target:10, progress:'Mega-socos: {n} / {total}', done:'Imbatíveis! A dupla perfeita! 💙🤜' },
-      'Cúmplice':           { title:'O aperto secreto dos cúmplices! 🤫', emoji:'🤫', target:5,  progress:'Apertos secretos: {n} / {total}', done:'Missão cumprida, cúmplice! 🕵️✅' },
-      'Irmão/ã de alma':    { title:'Irmãos/ãs de alma sempre se conectam! ❤️', emoji:'🤝', target:8,  progress:'Conexões: {n} / {total}',   done:'Vínculo eterno confirmado! ❤️✨' }
+      'Cúmplice':           { title:'O aperto secreto dos cúmplices! 🤫', emoji:'🤫', target:5, progress:'Apertos secretos: {n} / {total}', done:'Missão cumprida, cúmplice! 🕵️✅' },
+      'Irmão/ã de alma':    { title:'Irmãos/ãs de alma sempre se conectam! ❤️', emoji:'🤝', target:8, progress:'Conexões: {n} / {total}', done:'Vínculo eterno confirmado! ❤️✨' }
     },
     familiar: {
-      'Mãe':      { title:'Pague sua dívida de abraços, mãe! 🤗', emoji:'🤗', target:7, progress:'Abraços para mãe: {n} / {total}',    done:'Dívida com a mãe quitada! Te amo muito ❤️' },
-      'Pai':      { title:'Toca aqui com o pai! 👊', emoji:'👊',  target:5, progress:'Toques com pai: {n} / {total}', done:'Isso é pai! Os melhores! 💙👊' },
+      'Mãe':      { title:'Pague sua dívida de abraços, mãe! 🤗', emoji:'🤗', target:7, progress:'Abraços para mãe: {n} / {total}', done:'Dívida com a mãe quitada! Te amo muito ❤️' },
+      'Pai':      { title:'Toca aqui com o pai! 👊', emoji:'👊', target:5, progress:'Toques com pai: {n} / {total}', done:'Isso é pai! Os melhores! 💙👊' },
       'Irmão/ã':  { title:'Guerra de travesseiros virtual! 🥊', emoji:'🥊', target:6, progress:'Travesseiradas: {n} / {total}', done:'Vitória! Irmãos são para sempre! 🎉' },
       'Tio/a':    { title:'Toca aqui com seu tio/a favorito/a! 🙌', emoji:'🙌', target:5, progress:'Toques: {n} / {total}', done:'Você é o/a melhor! 🙌✨' },
       'Primo/a':  { title:'Jogo de palmas com seu primo/a! 👏', emoji:'👏', target:8, progress:'Palmas: {n} / {total}', done:'Primos para sempre! 🎊👏' },
       'Avô/ó':    { title:'Envie beijos para o avô/avó! 😘', emoji:'😘', target:10, progress:'Beijos enviados: {n} / {total}', done:'Abraços virtuais recebidos! 🥰❤️' }
     }
   },
-
-  trivia: {
-    question: '🤔 Por que o dia 14 de fevereiro é celebrado?',
-    options: [
-      '❤️ Por São Valentim, mártir romano',
-      '❄️ Porque é o dia mais frio do ano',
-      '🎁 A Hallmark inventou nos anos 20'
-    ],
-    right: 'Correto! 🎉 São Valentim era um padre romano que casava casais em segredo.',
-    wrong: 'Não exatamente! 😅 É celebrado por São Valentim, um mártir romano do século III.'
+  trivia: { question: '🤔 Por que o dia 14 de fevereiro é celebrado?', options: ['❤️ Por São Valentim, mártir romano', '❄️ Porque é o dia mais frio do ano', '🎁 A Hallmark inventou nos anos 20'], right: 'Correto! 🎉 São Valentim era um padre romano que casava casais em segredo.', wrong: 'Não exatamente! 😅 É celebrado por São Valentim, um mártir romano do século III.' },
+  ui: {
+    title:'MENSAGERIA VIP', desc:'Personalize seu envio 💕', gen:'Gerar Link 🚀',
+    rel:'Tipo de relacionamento', dest:'Para quem é?', msg:'Sua mensagem especial',
+    msgOpt:'✨ Opcional', msgHint:'💡 Se deixar vazio, será usada uma mensagem bonita padrão',
+    msgHolder:'Escreva algo especial para esta pessoa... 💕', copy:'COPIAR', result:'✅ Seu link está pronto! Copie e envie:'
   },
-
-  title: 'MENSAGERIA VIP',
-  desc: 'Personalize seu envio 💕',
-  lblRel: 'Tipo de relacionamento',
-  lblDest: 'Para quem é?',
-  lblMsg: 'Sua mensagem especial',
-  lblOpt: '✨ Opcional',
-  lblHint: '💡 Se deixar vazio, será usada uma mensagem bonita padrão',
-  btnGenerate: 'Gerar Link 🚀',
-  lblResult: '✅ Seu link está pronto!',
-  btnCopy: 'COPIAR',
-  tapTitle: 'Você tem uma surpresa',
-  tapSub: 'Alguém pensou em você hoje 💕',
-  tapBtn: 'Abrir! 💝',
-  tapHint: '🔊 Ative o som para a experiência completa',
-  btnShare: '💌 Quero enviar isso para alguém!',
-  shareSub: 'Crie sua própria surpresa personalizada →',
-  btnDonation: '☕ Pagar um café ao criador',
-  statsFooter: 'Feito com ❤️ amor',
   copied: 'Copiado! ✅',
   donation: '😂 Adoraria um café! Mas sério, o que me deixa mais feliz é que você gostou. Compartilhe com quem quiser! ❤️',
   statsResult: '📊 ESTATÍSTICAS\n\n🆔 Seu ID: {did}\n📥 Suas visitas: {myvisits}\n📤 Seus links criados: {mylinks}\n\n💡 Isso é salvo apenas no seu dispositivo.'
@@ -507,40 +532,888 @@ pt: {
 
 }; // END CONFIG
 
+  },
+  ui: {
+    title:'VIP MESSAGING', desc:'Customize your gift 💝', gen:'Generate Link 🚀',
+    rel:'Relationship type', dest:'Who is it for?', msg:'Your special message',
+    msgOpt:'✨ Optional', msgHint:'💡 If left blank a beautiful default message will be used',
+    msgHolder:'Write something special for this person... 💕', copy:'COPY', result:'✅ Your link is ready! Copy and send it:'
+  }
+}
+
+}; // end config
+
 // ═══════════════════════════════════════════════════════════════
-// FIREBASE FUNCTIONS
+// STATE
 // ═══════════════════════════════════════════════════════════════
-function saveMessage(category, subCategory, lang, hasCustomMessage) {
-    const timestamp = Date.now();
-    const messageData = {
-        category,
-        subCategory,
-        lang,
-        hasCustomMessage,
-        timestamp,
-        date: new Date().toISOString()
+let currentLang    = 'es';
+let audioCtx       = null;
+let audioUnlocked  = false;
+let musicMode      = 'none';
+let musicNodes     = [];
+let chordTimer     = null;
+let chordIdx       = 0;
+let chaosTimer     = null;
+let chaosOscNodes  = [];
+let melodyTimer    = null;
+let melodyNoteIdx  = 0;
+let firstClickDone = false;
+let currentTyper   = null;   // intervalo del tipeo en prank
+
+let statsClicks    = 0, statsTimer = null;
+let noEscapes      = 0, noLastTime = 0;
+let tapCount       = 0, hugCount   = 0;
+let triviaAnswered = false;
+const MAX_ESCAPES  = 6;
+
+// ── Sub-categoría actual (para lookup de juego) ────────────
+let currentCat = 'amistad';
+let currentSub = '';
+
+// ═══════════════════════════════════════════════════════════════
+// DEVICE TRACKING — localStorage (100% confiable, sin backend)
+// ═══════════════════════════════════════════════════════════════
+function getDeviceId() {
+    let id = localStorage.getItem('sp_did');
+    if (!id) {
+        id = 'D' + Math.random().toString(36).slice(2,6).toUpperCase()
+             + Date.now().toString(36).slice(-4).toUpperCase();
+        localStorage.setItem('sp_did', id);
+    }
+    return id;
+}
+function getMyVisits()  { return parseInt(localStorage.getItem('sp_v')  || '0', 10); }
+function getMyLinks()   { return parseInt(localStorage.getItem('sp_l')  || '0', 10); }
+function incMyVisits()  { localStorage.setItem('sp_v',  String(getMyVisits() + 1)); }
+function incMyLinks()   { localStorage.setItem('sp_l',  String(getMyLinks() + 1)); }
+
+// CountAPI (bonus, puede fallar)
+const NS = 'sorpresa-naofomi-v5';
+async function hitCounter(key) {
+    try { await fetch(`https://api.countapi.xyz/hit/${NS}/${key}`); } catch (_) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUDIO ENGINE
+// ═══════════════════════════════════════════════════════════════
+function getAudioCtx() {
+    if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+    return audioCtx;
+}
+function unlockAudio() {
+    if (audioUnlocked) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    audioUnlocked = true;
+}
+
+// ── FX ──────────────────────────────────────────────────────
+function playKeyClick() {
+    const ctx = getAudioCtx(); if (!ctx || !audioUnlocked) return;
+    try {
+        const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate*0.03), ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2)*0.28;
+        const src=ctx.createBufferSource(), g=ctx.createGain();
+        src.buffer=buf; g.gain.value=0.12;
+        src.connect(g); g.connect(ctx.destination); src.start();
+    } catch (_) {}
+}
+function playAlarm() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    try {
+        const t=ctx.currentTime;
+        [0,.18,.36,.54,.72].forEach(off=>{
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sawtooth'; o.frequency.setValueAtTime(1050,t+off);
+            o.frequency.exponentialRampToValueAtTime(200,t+off+.16);
+            g.gain.setValueAtTime(0.22,t+off); g.gain.exponentialRampToValueAtTime(0.001,t+off+.16);
+            o.connect(g); g.connect(ctx.destination); o.start(t+off); o.stop(t+off+.16);
+        });
+    } catch (_) {}
+}
+function playGlitch() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    try {
+        const t=ctx.currentTime;
+        for (let i=0;i<8;i++){
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='square'; o.frequency.value=80+Math.random()*3000;
+            g.gain.setValueAtTime(0.06,t+i*.035); g.gain.exponentialRampToValueAtTime(0.001,t+i*.035+.03);
+            o.connect(g); g.connect(ctx.destination); o.start(t+i*.035); o.stop(t+i*.035+.04);
+        }
+    } catch (_) {}
+}
+function playFanfare() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    try {
+        const t=ctx.currentTime;
+        [523.25,659.25,783.99,1046.5,1318.5].forEach((freq,i)=>{
+            const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sine'; o.frequency.value=freq;
+            o2.type='triangle'; o2.frequency.value=freq*2;
+            g.gain.setValueAtTime(0,t+i*.10); g.gain.linearRampToValueAtTime(0.20,t+i*.10+.04);
+            g.gain.exponentialRampToValueAtTime(0.001,t+i*.10+.65);
+            o.connect(g); o2.connect(g); g.connect(ctx.destination);
+            o.start(t+i*.10); o.stop(t+i*.10+.65);
+            o2.start(t+i*.10); o2.stop(t+i*.10+.65);
+        });
+    } catch (_) {}
+}
+function playPop() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    try {
+        const t=ctx.currentTime;
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(700,t); o.frequency.exponentialRampToValueAtTime(200,t+.12);
+        g.gain.setValueAtTime(0.18,t); g.gain.exponentialRampToValueAtTime(0.001,t+.12);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.12);
+    } catch (_) {}
+}
+function playDing(f1=880,f2=1320) {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    try {
+        const t=ctx.currentTime;
+        [f1,f2].forEach((f,i)=>{
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sine'; o.frequency.value=f;
+            g.gain.setValueAtTime(0,t+i*.09); g.gain.linearRampToValueAtTime(0.15,t+i*.09+.02);
+            g.gain.exponentialRampToValueAtTime(0.001,t+i*.09+.45);
+            o.connect(g); g.connect(ctx.destination); o.start(t+i*.09); o.stop(t+i*.09+.5);
+        });
+    } catch (_) {}
+}
+function playEscape() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    try {
+        const t=ctx.currentTime;
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='square'; o.frequency.setValueAtTime(300,t); o.frequency.exponentialRampToValueAtTime(900,t+.07);
+        g.gain.setValueAtTime(0.06,t); g.gain.exponentialRampToValueAtTime(0.001,t+.07);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.07);
+    } catch (_) {}
+}
+function playCheer() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    try {
+        const t=ctx.currentTime;
+        [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sine'; o.frequency.value=f;
+            g.gain.setValueAtTime(0,t+i*.08); g.gain.linearRampToValueAtTime(0.13,t+i*.08+.03);
+            g.gain.exponentialRampToValueAtTime(0.001,t+i*.08+.5);
+            o.connect(g); g.connect(ctx.destination); o.start(t+i*.08); o.stop(t+i*.08+.5);
+        });
+    } catch (_) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ★ MÚSICA — 4 modos
+// ═══════════════════════════════════════════════════════════════
+function stopAllMusic() {
+    clearTimeout(chordTimer); clearTimeout(chaosTimer); clearTimeout(melodyTimer);
+    musicNodes.forEach(n => {
+        try { if (n.stop)       n.stop();       } catch (_) {}
+        try { if (n.disconnect) n.disconnect(); } catch (_) {}
+    });
+    musicNodes = []; chaosOscNodes = [];
+    musicMode = 'none'; updateMusicBtn();
+}
+
+// ── MODO 1: AMBIENT (creator) ─────────────────────────────────
+const AMBIENT_CHORDS = [
+    [174.61,220.00,261.63,329.63],[146.83,196.00,220.00,293.66],
+    [116.54,174.61,220.00,261.63],[130.81,196.00,261.63,329.63]
+];
+function playAmbientChord() {
+    if (musicMode!=='ambient') return;
+    const ctx=getAudioCtx(); if (!ctx) return;
+    const chord=AMBIENT_CHORDS[chordIdx%AMBIENT_CHORDS.length]; chordIdx++;
+    chord.forEach(freq=>{
+        try {
+            const o=ctx.createOscillator(),g=ctx.createGain(),lfo=ctx.createOscillator(),lg=ctx.createGain();
+            o.type='triangle'; o.frequency.value=freq;
+            lfo.frequency.value=4; lg.gain.value=1.2; lfo.connect(lg); lg.connect(o.frequency); lfo.start();
+            g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.018,ctx.currentTime+1.2);
+            g.gain.setValueAtTime(0.018,ctx.currentTime+3.0); g.gain.linearRampToValueAtTime(0,ctx.currentTime+4.2);
+            o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+4.5);
+            musicNodes.push(o,g,lfo,lg);
+        } catch (_) {}
+    });
+    chordTimer=setTimeout(playAmbientChord,4000);
+}
+function startAmbientMusic() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    if (musicMode==='ambient') return;
+    stopAllMusic(); musicMode='ambient'; chordIdx=0; playAmbientChord(); updateMusicBtn();
+}
+
+// ── MODO 2: CHAOS (prank) ────────────────────────────────────
+const CHAOS_FREQS=[
+    [130.81,185.00,246.94,369.99],[138.59,185.00,207.65,311.13],
+    [123.47,164.81,184.99,246.94],[130.81,155.56,196.00,261.63]
+];
+function stopChaosNodes(){
+    chaosOscNodes.forEach(({o,g})=>{
+        try{const ctx=getAudioCtx();g.gain.setTargetAtTime(0,ctx.currentTime,0.3);setTimeout(()=>{try{o.stop();}catch(_){}},1200);}catch(_){}
+    }); chaosOscNodes=[];
+}
+function playChaosChord() {
+    if (musicMode!=='chaos') return;
+    const ctx=getAudioCtx(); if (!ctx) return;
+    stopChaosNodes();
+    const chord=CHAOS_FREQS[Math.floor(Math.random()*CHAOS_FREQS.length)];
+    const det=()=>(Math.random()-.5)*28;
+    chord.forEach(freq=>{
+        try {
+            const o=ctx.createOscillator(),g=ctx.createGain(),tl=ctx.createOscillator(),tg=ctx.createGain();
+            o.type=Math.random()>.5?'sawtooth':'square'; o.frequency.value=freq+det(); o.detune.value=det()*2;
+            tl.frequency.value=8+Math.random()*12; tg.gain.value=0.015;
+            tl.connect(tg); tg.connect(g.gain); tl.start();
+            g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(0.011,ctx.currentTime+.08);
+            o.connect(g); g.connect(ctx.destination); o.start();
+            musicNodes.push(o,g,tl,tg); chaosOscNodes.push({o,g});
+        } catch (_) {}
+    });
+    if (Math.random()>.6) {
+        try {
+            const buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.04),ctx.sampleRate);
+            const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*.035;
+            const ns=ctx.createBufferSource(),ng=ctx.createGain();
+            ns.buffer=buf; ng.gain.value=0.07;
+            ns.connect(ng); ng.connect(ctx.destination); ns.start();
+            musicNodes.push(ns,ng);
+        } catch (_) {}
+    }
+    chaosTimer=setTimeout(playChaosChord,1100+Math.random()*400);
+}
+function startChaosMusic() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    stopAllMusic(); musicMode='chaos'; playChaosChord(); updateMusicBtn();
+}
+
+// ── MODO 3: ROMÁNTICA (reveal) — melodía real ─────────────────
+// Melodía en Do mayor: C5-E5-G5-A5-G5-F5-E5-D5 (loop)
+const ROMANTIC_MELODY = [523.25,659.25,783.99,880.00,783.99,698.46,659.25,587.33];
+const ROMANTIC_BACKING = [
+    [261.63,329.63,392.00],[220.00,261.63,329.63],
+    [174.61,220.00,261.63],[196.00,261.63,329.63]
+];
+let romantBackIdx=0;
+function playRomanticNote() {
+    if (musicMode!=='romantic') return;
+    const ctx=getAudioCtx(); if (!ctx) return;
+    const t=ctx.currentTime;
+    const freq=ROMANTIC_MELODY[melodyNoteIdx%ROMANTIC_MELODY.length]; melodyNoteIdx++;
+    try {
+        // Nota principal (sine suave, levemente reverberada)
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sine'; o.frequency.value=freq;
+        g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.11,t+.06);
+        g.gain.setValueAtTime(0.11,t+.28); g.gain.exponentialRampToValueAtTime(0.001,t+.5);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.5);
+        musicNodes.push(o,g);
+        // Armónico (flute-like)
+        const o2=ctx.createOscillator(),g2=ctx.createGain();
+        o2.type='triangle'; o2.frequency.value=freq*2;
+        g2.gain.setValueAtTime(0,t); g2.gain.linearRampToValueAtTime(0.04,t+.06);
+        g2.gain.exponentialRampToValueAtTime(0.001,t+.4);
+        o2.connect(g2); g2.connect(ctx.destination); o2.start(t); o2.stop(t+.4);
+        musicNodes.push(o2,g2);
+    } catch (_) {}
+    // Acordes de acompañamiento cada 4 notas
+    if (melodyNoteIdx%4===0) {
+        const chord=ROMANTIC_BACKING[romantBackIdx%ROMANTIC_BACKING.length]; romantBackIdx++;
+        chord.forEach(f=>{
+            try {
+                const o=ctx.createOscillator(),g=ctx.createGain();
+                o.type='triangle'; o.frequency.value=f;
+                g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.015,t+.5);
+                g.gain.setValueAtTime(0.015,t+1.5); g.gain.linearRampToValueAtTime(0,t+2.2);
+                o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+2.2);
+                musicNodes.push(o,g);
+            } catch (_) {}
+        });
+    }
+    melodyTimer=setTimeout(playRomanticNote,480); // ~125 BPM
+}
+function startRomanticMusic() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    if (musicMode==='romantic') return;
+    stopAllMusic(); musicMode='romantic'; melodyNoteIdx=0; romantBackIdx=0; playRomanticNote(); updateMusicBtn();
+}
+
+// ── MODO 4: PHONK (trivia celebration) ───────────────────────
+// Características: 140BPM, bajo pesado, hi-hat, kick
+let phonkTimer=null;
+let phonkBeat=0;
+function playPhonkBeat() {
+    if (musicMode!=='phonk') return;
+    const ctx=getAudioCtx(); if (!ctx) return;
+    const t=ctx.currentTime;
+    const beat60=60/140; // 1 beat a 140BPM = 0.428s
+    const e=beat60/2;    // 1/8 note
+
+    // KICK (cada beat par)
+    if (phonkBeat%2===0) {
+        try {
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sine'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(40,t+.15);
+            g.gain.setValueAtTime(0.55,t); g.gain.exponentialRampToValueAtTime(0.001,t+.2);
+            o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.25);
+            musicNodes.push(o,g);
+        } catch (_) {}
+    }
+    // HI-HAT (cada 1/8 note)
+    try {
+        const buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.022),ctx.sampleRate);
+        const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*.5;
+        const ns=ctx.createBufferSource(),ng=ctx.createGain();
+        ns.buffer=buf; ng.gain.value=0.18;
+        ns.connect(ng); ng.connect(ctx.destination); ns.start(t);
+        musicNodes.push(ns,ng);
+    } catch (_) {}
+    // BASS (cada beat)
+    if (phonkBeat%2===0) {
+        try {
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='square'; o.frequency.value=phonkBeat%4===0?65:75;
+            g.gain.setValueAtTime(0.20,t); g.gain.exponentialRampToValueAtTime(0.001,t+beat60*.9);
+            o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+beat60);
+            musicNodes.push(o,g);
+        } catch (_) {}
+    }
+    // LEAD MELODÍA (beats 3-4 del compás)
+    if (phonkBeat%8>=4) {
+        const leads=[698.46,783.99,880.00,783.99];
+        const lFreq=leads[(phonkBeat%8)-4]||698.46;
+        try {
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sawtooth'; o.frequency.value=lFreq;
+            const d=ctx.createWaveShaper(); d.curve=makeDistortionCurve(80); d.oversample='4x';
+            o.connect(d); d.connect(g); g.connect(ctx.destination);
+            g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.12,t+.02);
+            g.gain.exponentialRampToValueAtTime(0.001,t+beat60*.85);
+            o.start(t); o.stop(t+beat60);
+            musicNodes.push(o,g,d);
+        } catch (_) {}
+    }
+    phonkBeat++;
+    phonkTimer=setTimeout(playPhonkBeat,e*1000);
+}
+function makeDistortionCurve(amount){
+    const n=256,curve=new Float32Array(n);
+    for(let i=0;i<n;i++){const x=i*2/n-1;curve[i]=x===0?0:(x/Math.abs(x))*(1-Math.exp(-Math.abs(x)*amount/20));}
+    return curve;
+}
+function startPhonkMusic() {
+    const ctx=getAudioCtx(); if (!ctx||!audioUnlocked) return;
+    if (musicMode==='phonk') return;
+    stopAllMusic(); musicMode='phonk'; phonkBeat=0; playPhonkBeat(); updateMusicBtn();
+}
+
+// ── Toggle manual ────────────────────────────────────────────
+function toggleMusic() {
+    unlockAudio();
+    if (musicMode!=='none') { stopAllMusic(); return; }
+    if (!document.getElementById('final-screen').classList.contains('hidden')) startRomanticMusic();
+    else if (!document.getElementById('prank-screen').classList.contains('hidden')) startChaosMusic();
+    else startAmbientMusic();
+}
+function updateMusicBtn() {
+    const btn=document.getElementById('music-btn'); if (!btn) return;
+    btn.textContent=musicMode!=='none'?'🎵':'🔇';
+    btn.style.boxShadow=musicMode!=='none'?'0 0 16px rgba(236,72,153,0.5)':'0 4px 15px rgba(0,0,0,0.3)';
+}
+
+// Primer clic → música ambient
+function setupFirstClickMusic() {
+    const fn=()=>{ if (firstClickDone) return; firstClickDone=true; unlockAudio();
+        if (musicMode==='none'
+            && document.getElementById('prank-screen').classList.contains('hidden')
+            && document.getElementById('final-screen').classList.contains('hidden')) startAmbientMusic();
     };
-    
-    // Guardar mensaje
-    database.ref('messages').push(messageData);
-    
-    // Actualizar contadores
-    database.ref('stats/totalMessages').transaction((current) => (current || 0) + 1);
-    database.ref(`stats/categories/${category}`).transaction((current) => (current || 0) + 1);
-    database.ref(`stats/languages/${lang}`).transaction((current) => (current || 0) + 1);
-}
-
-function recordView() {
-    const timestamp = Date.now();
-    database.ref('stats/totalViews').transaction((current) => (current || 0) + 1);
-    database.ref('views').push({ timestamp, date: new Date().toISOString() });
+    document.addEventListener('click',    fn,{once:true,capture:true});
+    document.addEventListener('touchstart',fn,{once:true,capture:true,passive:true});
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DASHBOARD FUNCTIONS
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function getSubIndex(cat,sub) {
+    for (const l of ['es','en']) {
+        const i=(config[l].sub[cat]||[]).indexOf(sub);
+        if (i>=0) return i;
+    }
+    return 0;
+}
+function getTrolleo(cat,sub) {
+    // Usa currentLang en tiempo real
+    const pool=config[currentLang]?.trolleos?.[cat];
+    if (!pool) return '';
+    if (pool[sub]) return pool[sub];
+    const idx=getSubIndex(cat,sub); const keys=Object.keys(pool);
+    return pool[keys[idx]]||pool[keys[0]]||'';
+}
+function getFinalMsg(cat,sub) {
+    const pool=config[currentLang]?.final?.[cat];
+    if (!pool) return '';
+    if (pool[sub]) return pool[sub];
+    const idx=getSubIndex(cat,sub); const keys=Object.keys(pool);
+    return pool[keys[idx]]||pool[keys[0]]||'';
+}
+function getGame(cat,sub) {
+    const pool=config[currentLang]?.games?.[cat];
+    if (!pool) return null;
+    if (pool[sub]) return pool[sub];
+    const idx=getSubIndex(cat,sub); const keys=Object.keys(pool);
+    return pool[keys[idx]]||pool[keys[0]]||null;
+}
+
+// ★ Saludo con privacidad
+function getGreeting(lang,cat,sub) {
+    const t=config[lang];
+    if (t.privateGreeting && t.privateGreeting.includes(sub)) return t.privateGreetingText;
+    return t.greeting.replace('{sub}',sub);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LANGUAGE — actualiza TODO el DOM visible
+// ═══════════════════════════════════════════════════════════════
+function changeLang(lang) {
+    currentLang=lang;
+    const t=config[lang]; const ui=t.ui;
+    const el=id=>document.getElementById(id);
+
+    el('btn-lang-es').classList.toggle('active',lang==='es');
+    el('btn-lang-en').classList.toggle('active',lang==='en');
+    el('btn-lang-fr').classList.toggle('active',lang==='fr');
+    el('btn-lang-pt').classList.toggle('active',lang==='pt');
+
+    // Creator
+    const cv=el('creator-view');
+    if (cv&&!cv.classList.contains('hidden')) {
+        el('ui-title').textContent=ui.title; el('ui-desc').textContent=ui.desc;
+        el('lbl-rel').textContent=ui.rel;    el('lbl-dest').textContent=ui.dest;
+        el('lbl-msg').textContent=ui.msg;    el('lbl-opt').textContent=ui.msgOpt;
+        el('lbl-hint').textContent=ui.msgHint; el('lbl-result').textContent=ui.result;
+        el('btn-generate').textContent=ui.gen; el('btn-copy').textContent=ui.copy;
+        el('custom-message').placeholder=ui.msgHolder;
+        const cs=el('main-category'); cs.innerHTML='';
+        for (const k in t.categories) cs.add(new Option(t.categories[k],k));
+        updateSubCats();
+    }
+
+    const rv=el('receiver-view');
+    if (!rv||rv.classList.contains('hidden')) return;
+
+    // Tap overlay
+    if (el('tap-title')) el('tap-title').textContent=t.tapTitle;
+    if (el('tap-sub'))   el('tap-sub').textContent=t.tapSub;
+    if (el('tap-btn'))   el('tap-btn').textContent=t.tapBtn;
+    if (el('tap-hint'))  el('tap-hint').textContent=t.tapHint;
+
+    // ★ Si la pantalla de PRANK está activa → reiniciar tipeo en nuevo idioma
+    const ps=el('prank-screen');
+    if (ps&&!ps.classList.contains('hidden')) {
+        restartPrankTyping();
+    }
+
+    // Final screen
+    const fs=el('final-screen');
+    if (fs&&!fs.classList.contains('hidden')) {
+        const p=new URLSearchParams(location.search);
+        refreshFinalScreen(lang,p);
+    }
+
+    // Trivia (actualizar si está visible)
+    const ta=el('trivia-area');
+    if (ta&&!ta.classList.contains('hidden')&&!triviaAnswered) {
+        renderTrivia();
+    }
+}
+
+function refreshFinalScreen(lang,params) {
+    const t=config[lang]; const el=id=>document.getElementById(id);
+    const cat=params.get('c')||currentCat;
+    const sub=decodeURIComponent(params.get('s')||currentSub);
+
+    el('final-greeting').textContent=getGreeting(lang,cat,sub);
+
+    const rawB64=params.get('m');
+    let msg=getFinalMsg(cat,sub);
+    if (rawB64){try{const d=decodeURIComponent(escape(atob(rawB64)));if(d.trim())msg=d;}catch(_){}}
+    el('final-text').textContent=msg;
+
+    if (el('btn-share'))    el('btn-share').textContent=t.shareBtn;
+    if (el('share-sub'))    el('share-sub').textContent=t.shareSub;
+    if (el('btn-donation')) el('btn-donation').textContent=t.donationBtn;
+
+    refreshGameUI(cat,sub);
+}
+
+function refreshGameUI(cat,sub) {
+    const g=getGame(cat,sub); const el=id=>document.getElementById(id); if (!g) return;
+    if (cat==='amor') {
+        if (el('question-text'))  el('question-text').textContent=g.question;
+        if (el('btn-yes'))        el('btn-yes').textContent=g.yesBtn;
+        if (el('celebrate-text')) el('celebrate-text').textContent=g.celebrateText;
+        if (el('celebrate-sub'))  el('celebrate-sub').textContent=g.celebrateSub;
+        const bn=el('btn-no');
+        if (bn&&!bn.classList.contains('btn-no-surrender')) bn.textContent=g.noBtn;
+    } else if (cat==='amistad') {
+        if (el('game-amistad-title')) el('game-amistad-title').textContent=g.title;
+        if (el('tap-game-btn'))       el('tap-game-btn').textContent=g.emoji;
+        updateTapProgress();
+        const doneEl=el('tap-done-text'); if(doneEl) doneEl.textContent=g.done;
+    } else if (cat==='familiar') {
+        if (el('game-familiar-title')) el('game-familiar-title').textContent=g.title;
+        if (el('hug-game-btn'))        el('hug-game-btn').textContent=g.emoji;
+        updateHugProgress();
+        const doneEl=el('hug-done-text'); if(doneEl) doneEl.textContent=g.done;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CREATOR
+// ═══════════════════════════════════════════════════════════════
+function updateSubCats() {
+    const cat=document.getElementById('main-category').value;
+    const ss=document.getElementById('sub-category'); ss.innerHTML='';
+    (config[currentLang].sub[cat]||[]).forEach(s=>ss.add(new Option(s,s)));
+}
+function generateLink() {
+    unlockAudio(); playPop();
+    const c=document.getElementById('main-category').value;
+    const s=document.getElementById('sub-category').value;
+    const raw=document.getElementById('custom-message').value.trim();
+    const m=btoa(unescape(encodeURIComponent(raw)));
+    const url=`${location.origin}${location.pathname}?c=${c}&s=${encodeURIComponent(s)}&m=${m}&l=${currentLang}`;
+    document.getElementById('final-url').value=url;
+    const ra=document.getElementById('result-area'); ra.classList.remove('hidden');
+    ra.scrollIntoView({behavior:'smooth',block:'nearest'});
+    incMyLinks(); hitCounter('links-generados');
+    // Firebase
+    const customMsg=document.getElementById('custom-message').value.trim();
+    saveToFirebase(c, s, currentLang, !!customMsg);
+}
+async function copyLink() {
+    unlockAudio();
+    const text=document.getElementById('final-url').value;
+    const btn=document.getElementById('btn-copy');
+    try { await navigator.clipboard.writeText(text); }
+    catch(_){ const inp=document.getElementById('final-url'); inp.select(); inp.setSelectionRange(0,99999); try{document.execCommand('copy');}catch(_2){} }
+    playDing();
+    const t=config[currentLang]; const orig=btn.textContent;
+    btn.textContent=t.copied; btn.classList.add('bg-green-700');
+    setTimeout(()=>{btn.textContent=t.ui.copy;btn.classList.remove('bg-green-700');},2000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RECEIVER: PRANK FLOW
+// ═══════════════════════════════════════════════════════════════
+function beginPrank() {
+    unlockAudio(); startChaosMusic();
+    recordViewFirebase(); // Firebase
+    document.getElementById('tap-overlay').classList.add('hidden');
+    const ps=document.getElementById('prank-screen');
+    ps.classList.remove('hidden'); ps.classList.add('fade-in');
+    setTimeout(()=>{
+        ps.classList.add('chaos-mode');
+        document.getElementById('prank-text').classList.add('chaos-mode');
+    },400);
+    const p=new URLSearchParams(location.search);
+    startTyping(p);
+}
+
+function startTyping(p) {
+    const cat=p.get('c')||'amistad';
+    const sub=decodeURIComponent(p.get('s')||'');
+    const msg=getTrolleo(cat,sub);  // ← usa currentLang en tiempo real
+    const el=document.getElementById('prank-text');
+    el.style.whiteSpace='pre-wrap'; el.textContent=''; el.classList.remove('terminal-cursor');
+
+    if (currentTyper) { clearInterval(currentTyper); currentTyper=null; }
+
+    let i=0,ce=0;
+    currentTyper=setInterval(()=>{
+        el.textContent+=msg.charAt(i); i++;
+        ce++; const ch=msg.charAt(i-1);
+        if (ce>=3&&ch!=='\n'&&ch!==' '){ ce=0; playKeyClick(); }
+        if (i>=msg.length){ clearInterval(currentTyper); currentTyper=null; el.classList.add('terminal-cursor'); setTimeout(()=>fillBar(p),700); }
+    },28);
+}
+
+// ★ Reiniciar tipeo al cambiar idioma durante prank
+function restartPrankTyping() {
+    if (currentTyper){ clearInterval(currentTyper); currentTyper=null; }
+    const p=new URLSearchParams(location.search);
+    // Resetear barra
+    const bar=document.getElementById('progress-bar'); if(bar) bar.style.width='0%';
+    startTyping(p);
+}
+
+function fillBar(p) {
+    const bar=document.getElementById('progress-bar'), cont=document.getElementById('main-container');
+    const el=document.getElementById('prank-text'); el.classList.remove('terminal-cursor');
+    let w=0;
+    const iv=setInterval(()=>{
+        w++; bar.style.width=w+'%';
+        if (w===55) playAlarm();
+        if (w===80){ playGlitch(); cont.classList.add('shake-heavy'); }
+        if (w>=100){ clearInterval(iv); cont.classList.remove('shake-heavy'); setTimeout(()=>showFinal(p),400); }
+    },38);
+}
+
+function showFinal(p) {
+    playFanfare(); launchConfetti();
+    setTimeout(startRomanticMusic,900);  // ★ melodía romántica
+
+    document.getElementById('prank-screen').classList.add('hidden');
+    const fs=document.getElementById('final-screen');
+    fs.classList.remove('hidden'); fs.classList.add('fade-in');
+
+    const lang=currentLang;
+    const cat=p.get('c')||'amistad';
+    const sub=decodeURIComponent(p.get('s')||'');
+    const t=config[lang];
+    currentCat=cat; currentSub=sub;  // guardar para uso en refreshes
+
+    const rawB64=p.get('m');
+    let finalMsg=getFinalMsg(cat,sub);
+    if (rawB64){try{const d=decodeURIComponent(escape(atob(rawB64)));if(d.trim())finalMsg=d;}catch(_){}}
+
+    document.getElementById('final-greeting').textContent=getGreeting(lang,cat,sub);
+    document.getElementById('final-text').textContent=finalMsg;
+    document.getElementById('btn-share').textContent=t.shareBtn;
+    document.getElementById('share-sub').textContent=t.shareSub;
+    document.getElementById('btn-donation').textContent=t.donationBtn;
+
+    initGame(lang,cat,sub);
+
+    // Mostrar trivia después de 1.5s
+    setTimeout(()=>{
+        renderTrivia();
+        document.getElementById('trivia-area').classList.remove('hidden');
+    },1500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAMES
+// ═══════════════════════════════════════════════════════════════
+function initGame(lang,cat,sub) {
+    document.getElementById('game-area').classList.remove('hidden');
+    ['amor','amistad','familiar'].forEach(c=>document.getElementById('game-'+c).classList.add('hidden'));
+    document.getElementById('game-'+cat).classList.remove('hidden');
+    refreshGameUI(cat,sub);
+    if (cat==='amor') setTimeout(setupBtnNo,150);
+}
+
+// ── AMOR ────────────────────────────────────────────────────
+const NO_POS=[
+    {left:'65%',top:'-30px'},{left:'-28%',top:'25px'},
+    {left:'60%',top:'38px'}, {left:'-22%',top:'-28px'},
+    {left:'58%',top:'-18px'},{left:'-12%',top:'32px'},
+];
+function setupBtnNo() {
+    const btn=document.getElementById('btn-no'); if (!btn) return;
+    noEscapes=0; noLastTime=0;
+    function tryEscape(){
+        const now=Date.now(); if (now-noLastTime<200) return; noLastTime=now; noEscapes++;
+        playEscape();
+        if (noEscapes>=MAX_ESCAPES){
+            const g=getGame(currentCat,currentSub);
+            btn.textContent=g?g.noSurrender:'💕 ¡Igual te quiero!';
+            btn.style.cssText=''; btn.style.position='relative';
+            btn.classList.add('btn-no-surrender','bg-pink-100','text-pink-500');
+            btn.removeEventListener('mouseover',tryEscape); btn.removeEventListener('touchstart',tryEscape);
+            btn.onclick=celebrate; return;
+        }
+        const pos=NO_POS[(noEscapes-1)%NO_POS.length];
+        btn.style.left=pos.left; btn.style.top=pos.top;
+    }
+    btn.addEventListener('mouseover',tryEscape);
+    btn.addEventListener('touchstart',tryEscape,{passive:true});
+}
+function celebrate() {
+    document.getElementById('btn-no-wrapper').style.display='none';
+    document.getElementById('celebrate-msg').classList.remove('hidden');
+    playFanfare(); launchConfetti(); setTimeout(launchConfetti,600);
+}
+
+// ── AMISTAD ─────────────────────────────────────────────────
+function handleTapGame() {
+    const g=getGame(currentCat,currentSub)||{target:7};
+    const target=g.target||7;
+    tapCount++; playDing(440+tapCount*50,660+tapCount*50);
+    const btn=document.getElementById('tap-game-btn');
+    btn.classList.add('game-tap-active'); setTimeout(()=>btn.classList.remove('game-tap-active'),180);
+    updateTapProgress();
+    if (tapCount>=target){ btn.style.pointerEvents='none'; document.getElementById('tap-done-msg').classList.remove('hidden'); playCheer(); launchConfetti(); btn.textContent='🤝'; }
+}
+function updateTapProgress() {
+    const g=getGame(currentCat,currentSub)||{target:7,progress:'Apretones: {n} / {total}',done:'¡Somos los mejores!'};
+    const target=g.target||7;
+    const pct=Math.min(100,Math.round(tapCount/target*100));
+    document.getElementById('tap-progress').style.width=pct+'%';
+    document.getElementById('tap-progress-text').textContent=(g.progress||'').replace('{n}',Math.min(tapCount,target)).replace('{total}',target);
+    const de=document.getElementById('tap-done-text'); if(de) de.textContent=g.done||'';
+}
+
+// ── FAMILIAR ────────────────────────────────────────────────
+function handleHugGame() {
+    const g=getGame(currentCat,currentSub)||{target:5};
+    const target=g.target||5;
+    hugCount++; playDing(300+hugCount*25,500+hugCount*25);
+    const btn=document.getElementById('hug-game-btn');
+    btn.classList.add('game-tap-active'); setTimeout(()=>btn.classList.remove('game-tap-active'),200);
+    updateHugProgress();
+    if (hugCount>=target){ btn.style.pointerEvents='none'; document.getElementById('hug-done-msg').classList.remove('hidden'); playCheer(); launchConfetti(); btn.textContent='💝'; }
+}
+function updateHugProgress() {
+    const g=getGame(currentCat,currentSub)||{target:5,progress:'Abrazos: {n} / {total}',done:'¡Deuda saldada!'};
+    const target=g.target||5;
+    const pct=Math.min(100,Math.round(hugCount/target*100));
+    document.getElementById('hug-progress').style.width=pct+'%';
+    document.getElementById('hug-progress-text').textContent=(g.progress||'').replace('{n}',Math.min(hugCount,target)).replace('{total}',target);
+    const de=document.getElementById('hug-done-text'); if(de) de.textContent=g.done||'';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ★ TRIVIA
+// ═══════════════════════════════════════════════════════════════
+function renderTrivia() {
+    const t=config[currentLang].trivia; if (!t) return;
+    const el=id=>document.getElementById(id);
+    el('trivia-question').textContent=t.question;
+    const optContainer=el('trivia-options'); optContainer.innerHTML='';
+    t.options.forEach((opt,i)=>{
+        const btn=document.createElement('button');
+        btn.className='trivia-btn w-full text-left font-semibold rounded-xl p-3 transition body-text';
+        btn.textContent=opt;
+        btn.onclick=()=>checkTrivia(i);
+        optContainer.appendChild(btn);
+    });
+    // Reset result
+    const res=el('trivia-result'); if(res){ res.classList.add('hidden'); }
+}
+
+function checkTrivia(idx) {
+    if (triviaAnswered) return;
+    triviaAnswered=true;
+    const t=config[currentLang].trivia;
+    const correct=idx===t.correct;
+    const btns=document.querySelectorAll('.trivia-btn');
+
+    btns.forEach((btn,i)=>{
+        btn.disabled=true;
+        if (i===t.correct) { btn.classList.add('trivia-correct'); }
+        else if (i===idx && !correct) { btn.classList.add('trivia-wrong'); }
+    });
+
+    const resDiv=document.getElementById('trivia-result');
+    const icon=document.getElementById('trivia-result-icon');
+    const text=document.getElementById('trivia-result-text');
+
+    icon.textContent=correct?'🎉':'😅';
+    text.textContent=correct?t.right:t.wrong;
+    resDiv.classList.remove('hidden');
+
+    if (correct) {
+        // ★ PHONK CELEBRATION
+        setTimeout(startPhonkMusic,200);
+        epicConfetti();
+        // Animación de la card
+        const card=document.getElementById('main-container');
+        card.classList.add('celebrate-flash');
+        setTimeout(()=>card.classList.remove('celebrate-flash'),2000);
+        // Parar phonk después de 8 segundos y volver a romántica
+        setTimeout(()=>{ if(musicMode==='phonk') startRomanticMusic(); },8000);
+    } else {
+        playDing(220,330);
+    }
+}
+
+function epicConfetti() {
+    const colors=['#ff4d6d','#ffd700','#ff85a1','#00ff88','#4d88ff','#ff6b35','#a855f7'];
+    // Lluvia de confeti épica
+    const end=Date.now()+4000;
+    (function frame(){
+        confetti({particleCount:8,angle:60, spread:55,origin:{x:0},colors});
+        confetti({particleCount:8,angle:120,spread:55,origin:{x:1},colors});
+        confetti({particleCount:5,angle:90, spread:70,origin:{x:.5,y:0},colors});
+        if (Date.now()<end) requestAnimationFrame(frame);
+    })();
+    // Explosión central extra
+    confetti({particleCount:200,spread:100,origin:{y:.5},colors});
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONFETI NORMAL
+// ═══════════════════════════════════════════════════════════════
+function launchConfetti() {
+    const c=['#ff4d6d','#ff85a1','#ffd6e0','#ff0054','#ffccd5'];
+    confetti({particleCount:110,spread:70,origin:{y:.65},colors:c});
+    setTimeout(()=>{
+        confetti({particleCount:65,angle:60, spread:55,origin:{x:0,y:.7},colors:c});
+        confetti({particleCount:65,angle:120,spread:55,origin:{x:1,y:.7},colors:c});
+    },380);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACCIONES
+// ═══════════════════════════════════════════════════════════════
+function goToCreator() { window.location.href=location.origin+location.pathname; }
+function showDonationJoke() { alert(config[currentLang].donation); }
+
+// ═══════════════════════════════════════════════════════════════
+// STATS (5 clics en footer)
+// ═══════════════════════════════════════════════════════════════
+function handleStatsTrigger() {
+    statsClicks++; clearTimeout(statsTimer);
+    statsTimer=setTimeout(()=>{statsClicks=0;},2000);
+    if (statsClicks>=5){ statsClicks=0; showStats(); }
+}
+function showStats() {
+    const t=config[currentLang]; const did=getDeviceId();
+    const myV=getMyVisits(); const myL=getMyLinks();
+    alert(t.statsResult.replace('{did}',did).replace('{myvisits}',myV).replace('{mylinks}',myL));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+window.onload=()=>{
+    const p=new URLSearchParams(location.search);
+    setupFirstClickMusic();
+
+    if (p.has('c')) {
+        // RECEIVER
+        document.getElementById('creator-view').classList.add('hidden');
+        document.getElementById('receiver-view').classList.remove('hidden');
+        const lang=p.get('l')||'es'; const t=config[lang]; currentLang=lang;
+        document.getElementById('tap-title').textContent=t.tapTitle;
+        document.getElementById('tap-sub').textContent=t.tapSub;
+        document.getElementById('tap-btn').textContent=t.tapBtn;
+        document.getElementById('tap-hint').textContent=t.tapHint;
+        document.getElementById('btn-lang-es').classList.toggle('active',lang==='es');
+        document.getElementById('btn-lang-en').classList.toggle('active',lang==='en');
+        document.getElementById('btn-lang-fr').classList.toggle('active',lang==='fr');
+        document.getElementById('btn-lang-pt').classList.toggle('active',lang==='pt');
+        incMyVisits(); hitCounter('visitas-prank');
+    } else {
+        // CREATOR
+        changeLang('es');
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ★ DASHBOARD (NUEVO)
 // ═══════════════════════════════════════════════════════════════
 function showDashboard() {
     const modal = document.getElementById('dashboard-modal');
+    if (!modal) return;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     loadDashboardData();
@@ -549,26 +1422,32 @@ function showDashboard() {
 function closeDashboard(event) {
     if (!event || event.target === event.currentTarget) {
         const modal = document.getElementById('dashboard-modal');
+        if (!modal) return;
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
 }
 
 function loadDashboardData() {
+    if (!database) return;
+    
     // Total messages
     database.ref('stats/totalMessages').once('value').then(snapshot => {
-        document.getElementById('total-messages').textContent = snapshot.val() || 0;
+        const el = document.getElementById('total-messages');
+        if (el) el.textContent = snapshot.val() || 0;
     });
     
     // Total views
     database.ref('stats/totalViews').once('value').then(snapshot => {
-        document.getElementById('total-views').textContent = snapshot.val() || 0;
+        const el = document.getElementById('total-views');
+        if (el) el.textContent = snapshot.val() || 0;
     });
     
     // Categories chart
     database.ref('stats/categories').once('value').then(snapshot => {
         const categories = snapshot.val() || {};
         const chartDiv = document.getElementById('categories-chart');
+        if (!chartDiv) return;
         chartDiv.innerHTML = '';
         
         const total = Object.values(categories).reduce((a, b) => a + b, 0);
@@ -598,6 +1477,7 @@ function loadDashboardData() {
     database.ref('stats/languages').once('value').then(snapshot => {
         const languages = snapshot.val() || {};
         const chartDiv = document.getElementById('languages-chart');
+        if (!chartDiv) return;
         chartDiv.innerHTML = '';
         
         const langFlags = { es: '🇲🇽', en: '🇺🇸', fr: '🇫🇷', pt: '🇧🇷' };
@@ -631,6 +1511,7 @@ function loadDashboardData() {
         messages.reverse();
         
         const recentDiv = document.getElementById('recent-messages');
+        if (!recentDiv) return;
         recentDiv.innerHTML = '';
         
         messages.forEach(msg => {
@@ -669,532 +1550,4 @@ function getTimeAgo(date) {
     }
     return 'Justo ahora';
 }
-
-// ═══════════════════════════════════════════════════════════════
-// AUDIO CONTEXT & MUSIC
-// ═══════════════════════════════════════════════════════════════
-function setupFirstClickMusic() {
-    document.body.addEventListener('click', ()=>{
-        if (!audioCtx) { audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }
-    }, {once:true});
-}
-
-function playDing(f1=440,f2=554) {
-    if(!audioCtx)return;
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.frequency.value=f1; o.connect(g); g.connect(audioCtx.destination);
-    g.gain.setValueAtTime(0.15,audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.18);
-    o.start(); o.stop(audioCtx.currentTime+0.18);
-    setTimeout(()=>{
-        const o2=audioCtx.createOscillator(),g2=audioCtx.createGain();
-        o2.frequency.value=f2; o2.connect(g2); g2.connect(audioCtx.destination);
-        g2.gain.setValueAtTime(0.15,audioCtx.currentTime);
-        g2.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.22);
-        o2.start(); o2.stop(audioCtx.currentTime+0.22);
-    },90);
-}
-
-function playWhoosh() {
-    if(!audioCtx)return;
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.frequency.setValueAtTime(800,audioCtx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(120,audioCtx.currentTime+0.3);
-    o.connect(g); g.connect(audioCtx.destination);
-    g.gain.setValueAtTime(0.2,audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.3);
-    o.start(); o.stop(audioCtx.currentTime+0.3);
-}
-
-function playPop() {
-    if(!audioCtx)return;
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.frequency.setValueAtTime(180,audioCtx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(60,audioCtx.currentTime+0.1);
-    o.connect(g); g.connect(audioCtx.destination);
-    g.gain.setValueAtTime(0.25,audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.1);
-    o.start(); o.stop(audioCtx.currentTime+0.1);
-}
-
-// ─── MÚSICA ───
-let oscillators=[];
-function stopMusic() {
-    oscillators.forEach(o=>{ try{o.stop();}catch(e){} });
-    oscillators=[];
-    musicMode='off';
-}
-
-function toggleMusic() {
-    if(musicMode==='off'){ startAmbientMusic(); }
-    else if(musicMode==='ambient'){ startChaosMusic(); }
-    else if(musicMode==='chaos'){ startRomanticMusic(); }
-    else if(musicMode==='romantic'){ stopMusic(); }
-    else{ stopMusic(); }
-}
-
-function startAmbientMusic() {
-    stopMusic(); musicMode='ambient';
-    if(!audioCtx)return;
-    const createAmbient=(freq,vol,detune=0)=>{
-        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-        o.frequency.value=freq; o.detune.value=detune;
-        o.type='sine'; o.connect(g); g.connect(audioCtx.destination);
-        g.gain.setValueAtTime(0,audioCtx.currentTime);
-        g.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+1.5);
-        o.start(); oscillators.push(o); return{o,g};
-    };
-    createAmbient(130.81,0.04); createAmbient(164.81,0.03);
-    createAmbient(196,0.035,5);  createAmbient(261.63,0.025,-3);
-}
-
-function startChaosMusic() {
-    stopMusic(); musicMode='chaos';
-    if(!audioCtx)return;
-    const createChaos=(freq,vol,speed)=>{
-        const o=audioCtx.createOscillator(),g=audioCtx.createGain(),lfo=audioCtx.createOscillator();
-        o.type='sawtooth'; o.frequency.value=freq; lfo.frequency.value=speed;
-        const lfoGain=audioCtx.createGain(); lfoGain.gain.value=30;
-        lfo.connect(lfoGain); lfoGain.connect(o.frequency);
-        o.connect(g); g.connect(audioCtx.destination); g.gain.value=vol;
-        o.start(); lfo.start(); oscillators.push(o,lfo);
-    };
-    createChaos(110,0.05,0.5); createChaos(146.83,0.04,0.7);
-    createChaos(164.81,0.045,0.3); createChaos(220,0.035,0.6);
-}
-
-function startRomanticMusic() {
-    stopMusic(); musicMode='romantic';
-    if(!audioCtx)return;
-    const createRomantic=(freq,vol,detune=0)=>{
-        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-        o.frequency.value=freq; o.detune.value=detune;
-        o.type='sine'; o.connect(g); g.connect(audioCtx.destination);
-        g.gain.setValueAtTime(0,audioCtx.currentTime);
-        g.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+1.2);
-        o.start(); oscillators.push(o);
-    };
-    createRomantic(261.63,0.05); createRomantic(329.63,0.04,3);
-    createRomantic(392,0.045,-2);  createRomantic(523.25,0.03,5);
-}
-
-function startPhonkMusic() {
-    stopMusic(); musicMode='phonk';
-    if(!audioCtx)return;
-    const bass=(freq,vol)=>{
-        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-        o.type='sawtooth'; o.frequency.value=freq;
-        o.connect(g); g.connect(audioCtx.destination);
-        g.gain.setValueAtTime(vol,audioCtx.currentTime);
-        o.start(); oscillators.push(o);
-    };
-    bass(55,0.12); bass(82.41,0.08); bass(110,0.09);
-    
-    const hihat=()=>{
-        const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-        o.type='square'; o.frequency.value=8000;
-        o.connect(g); g.connect(audioCtx.destination);
-        g.gain.setValueAtTime(0.05,audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.05);
-        o.start(); o.stop(audioCtx.currentTime+0.05);
-    };
-    setInterval(hihat,250);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// LANGUAGE
-// ═══════════════════════════════════════════════════════════════
-function changeLang(l) {
-    currentLang=l;
-    ['es','en','fr','pt'].forEach(x=>document.getElementById('btn-lang-'+x).classList.toggle('active',x===l));
-    renderCreator();
-}
-
-function renderCreator() {
-    const t=config[currentLang];
-    document.getElementById('ui-title').textContent=t.title;
-    document.getElementById('ui-desc').textContent=t.desc;
-    document.getElementById('lbl-rel').textContent=t.lblRel;
-    document.getElementById('lbl-dest').textContent=t.lblDest;
-    document.getElementById('lbl-msg').textContent=t.lblMsg;
-    document.getElementById('lbl-opt').textContent=t.lblOpt;
-    document.getElementById('lbl-hint').textContent=t.lblHint;
-    document.getElementById('btn-generate').textContent=t.btnGenerate;
-    document.getElementById('lbl-result').textContent=t.lblResult;
-    document.getElementById('btn-copy').textContent=t.btnCopy;
-    document.getElementById('stats-trigger').textContent=t.statsFooter;
-
-    const mainCat=document.getElementById('main-category');
-    mainCat.innerHTML='';
-    Object.entries(t.categories).forEach(([k,v])=>{
-        const opt=document.createElement('option'); opt.value=k; opt.textContent=v; mainCat.appendChild(opt);
-    });
-    updateSubCats();
-}
-
-function updateSubCats() {
-    const t=config[currentLang];
-    const mainCat=document.getElementById('main-category').value;
-    const subCat=document.getElementById('sub-category');
-    subCat.innerHTML='';
-    t.sub[mainCat].forEach(s=>{
-        const opt=document.createElement('option'); opt.value=s; opt.textContent=s; subCat.appendChild(opt);
-    });
-}
-
-// ═══════════════════════════════════════════════════════════════
-// CREATOR
-// ═══════════════════════════════════════════════════════════════
-function generateLink() {
-    const mainCat=document.getElementById('main-category').value;
-    const subCat=document.getElementById('sub-category').value;
-    const customMsg=document.getElementById('custom-message').value.trim();
-    const params=new URLSearchParams({c:mainCat,s:subCat,l:currentLang});
-    if(customMsg) params.set('m',btoa(encodeURIComponent(customMsg)));
-    
-    const url=location.origin+location.pathname+'?'+params.toString();
-    document.getElementById('final-url').value=url;
-    document.getElementById('result-area').classList.remove('hidden');
-    playDing(440,554);
-    
-    // Guardar en Firebase
-    saveMessage(mainCat, subCat, currentLang, !!customMsg);
-    incMyLinks();
-}
-
-function copyLink() {
-    const input=document.getElementById('final-url');
-    input.select(); input.setSelectionRange(0,99999);
-    navigator.clipboard.writeText(input.value);
-    const btn=document.getElementById('btn-copy');
-    const orig=btn.textContent;
-    btn.textContent=config[currentLang].copied;
-    playDing(554,659);
-    setTimeout(()=>btn.textContent=orig,1500);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RECEIVER
-// ═══════════════════════════════════════════════════════════════
-function beginPrank() {
-    recordView(); // Firebase
-    playWhoosh();
-    document.getElementById('tap-overlay').classList.add('hidden');
-    document.getElementById('prank-screen').classList.remove('hidden');
-    startChaosMusic();
-    
-    const p=new URLSearchParams(location.search);
-    const mainCat=p.get('c'), subCat=p.get('s'), lang=p.get('l')||'es';
-    const t=config[lang].trolleos[mainCat][subCat];
-    
-    const prankBox=document.getElementById('prank-text');
-    prankBox.textContent='';
-    prankBox.classList.add('chaos-mode');
-    
-    let idx=0;
-    const typeChar=()=>{
-        if(idx<t.length){ prankBox.textContent+=t[idx]; idx++; setTimeout(typeChar,25); }
-        else{ setTimeout(showFinal,800); }
-    };
-    
-    const prg=document.getElementById('progress-bar');
-    let w=0;
-    const fillBar=setInterval(()=>{
-        w+=1; prg.style.width=w+'%';
-        if(w>=100){ clearInterval(fillBar); }
-    },40);
-    
-    typeChar();
-    document.body.classList.add('shake-heavy');
-    setTimeout(()=>document.body.classList.remove('shake-heavy'),1800);
-}
-
-function showFinal() {
-    startRomanticMusic();
-    document.getElementById('prank-screen').classList.add('hidden');
-    document.getElementById('final-screen').classList.remove('hidden');
-    
-    const p=new URLSearchParams(location.search);
-    const mainCat=p.get('c'), subCat=p.get('s'), lang=p.get('l')||'es', customMsg=p.get('m');
-    const t=config[lang];
-    
-    let greeting='';
-    if(t.privateGreeting.includes(subCat)){ greeting=t.privateGreetingText; }
-    else{ greeting='¡Para ti! De: Alguien que te quiere 💝'; }
-    document.getElementById('final-greeting').textContent=greeting;
-    
-    let finalText='';
-    if(customMsg){
-        try{ finalText=decodeURIComponent(atob(customMsg)); }
-        catch(e){ finalText=t.final[mainCat][subCat]; }
-    } else{ finalText=t.final[mainCat][subCat]; }
-    document.getElementById('final-text').textContent=finalText;
-    
-    const gameArea=document.getElementById('game-area');
-    const triviaArea=document.getElementById('trivia-area');
-    gameArea.classList.add('hidden');
-    triviaArea.classList.add('hidden');
-    document.getElementById('game-amor').classList.add('hidden');
-    document.getElementById('game-amistad').classList.add('hidden');
-    document.getElementById('game-familiar').classList.add('hidden');
-    
-    if(mainCat==='amor'){
-        gameArea.classList.remove('hidden');
-        document.getElementById('game-amor').classList.remove('hidden');
-        setupGameAmor(t.games.amor[subCat]);
-    } else if(mainCat==='amistad'){
-        gameArea.classList.remove('hidden');
-        document.getElementById('game-amistad').classList.remove('hidden');
-        setupGameAmistad(t.games.amistad[subCat]);
-    } else if(mainCat==='familiar'){
-        gameArea.classList.remove('hidden');
-        document.getElementById('game-familiar').classList.remove('hidden');
-        setupGameFamiliar(t.games.familiar[subCat]);
-    }
-    
-    triviaArea.classList.remove('hidden');
-    setupTrivia(t.trivia);
-    
-    document.getElementById('btn-share').textContent=t.btnShare;
-    document.getElementById('share-sub').textContent=t.shareSub;
-    document.getElementById('btn-donation').textContent=t.btnDonation;
-    document.getElementById('stats-trigger-r').textContent=t.statsFooter;
-    
-    launchConfetti();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// GAMES
-// ═══════════════════════════════════════════════════════════════
-function setupGameAmor(g) {
-    noMoveCount=0;
-    document.getElementById('question-text').textContent=g.question;
-    document.getElementById('btn-yes').textContent=g.yesBtn;
-    document.getElementById('btn-no').textContent=g.noBtn;
-    document.getElementById('celebrate-text').textContent=g.celebrateText;
-    document.getElementById('celebrate-sub').textContent=g.celebrateSub;
-    
-    const btnNo=document.getElementById('btn-no');
-    btnNo.classList.remove('btn-no-surrender');
-    btnNo.style.right='0';
-    
-    btnNo.onmouseover=()=>{ moveNoBtn(); };
-    btnNo.ontouchstart=(e)=>{ e.preventDefault(); moveNoBtn(); };
-    
-    function moveNoBtn() {
-        if(noMoveCount>=10){
-            btnNo.textContent=g.noSurrender;
-            btnNo.classList.add('btn-no-surrender');
-            btnNo.style.right='0'; btnNo.style.transform='none';
-            return;
-        }
-        noMoveCount++;
-        const w=document.getElementById('btn-no-wrapper').offsetWidth;
-        const btnW=btnNo.offsetWidth;
-        const maxR=w-btnW-120;
-        const newR=Math.random()*maxR;
-        btnNo.style.right=newR+'px';
-        playPop();
-    }
-}
-
-function celebrate() {
-    playDing(554,659);
-    document.getElementById('celebrate-msg').classList.remove('hidden');
-    launchConfetti();
-}
-
-function setupGameAmistad(g) {
-    tapCount=0;
-    document.getElementById('game-amistad-title').textContent=g.title;
-    document.getElementById('tap-game-btn').textContent=g.emoji;
-    updateTapProgress(g);
-}
-
-function handleTapGame() {
-    const p=new URLSearchParams(location.search);
-    const lang=p.get('l')||'es', mainCat=p.get('c'), subCat=p.get('s');
-    const g=config[lang].games.amistad[subCat];
-    
-    tapCount++;
-    updateTapProgress(g);
-    playPop();
-    
-    const btn=document.getElementById('tap-game-btn');
-    btn.classList.add('game-tap-active');
-    setTimeout(()=>btn.classList.remove('game-tap-active'),150);
-    
-    if(tapCount>=g.target){
-        document.getElementById('tap-done-text').textContent=g.done;
-        document.getElementById('tap-done-msg').classList.remove('hidden');
-        launchConfetti();
-    }
-}
-
-function updateTapProgress(g) {
-    const pct=(tapCount/g.target)*100;
-    document.getElementById('tap-progress').style.width=pct+'%';
-    document.getElementById('tap-progress-text').textContent=g.progress.replace('{n}',tapCount).replace('{total}',g.target);
-}
-
-function setupGameFamiliar(g) {
-    hugCount=0;
-    document.getElementById('game-familiar-title').textContent=g.title;
-    document.getElementById('hug-game-btn').textContent=g.emoji;
-    updateHugProgress(g);
-}
-
-function handleHugGame() {
-    const p=new URLSearchParams(location.search);
-    const lang=p.get('l')||'es', mainCat=p.get('c'), subCat=p.get('s');
-    const g=config[lang].games.familiar[subCat];
-    
-    hugCount++;
-    updateHugProgress(g);
-    playPop();
-    
-    const btn=document.getElementById('hug-game-btn');
-    btn.classList.add('game-tap-active');
-    setTimeout(()=>btn.classList.remove('game-tap-active'),150);
-    
-    if(hugCount>=g.target){
-        document.getElementById('hug-done-text').textContent=g.done;
-        document.getElementById('hug-done-msg').classList.remove('hidden');
-        launchConfetti();
-    }
-}
-
-function updateHugProgress(g) {
-    const pct=(hugCount/g.target)*100;
-    document.getElementById('hug-progress').style.width=pct+'%';
-    document.getElementById('hug-progress-text').textContent=g.progress.replace('{n}',hugCount).replace('{total}',g.target);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TRIVIA
-// ═══════════════════════════════════════════════════════════════
-function setupTrivia(t) {
-    triviaAnswered=false;
-    document.getElementById('trivia-question').textContent=t.question;
-    const opts=document.getElementById('trivia-options');
-    opts.innerHTML='';
-    t.options.forEach((opt,i)=>{
-        const btn=document.createElement('button');
-        btn.className='trivia-btn w-full text-left font-semibold rounded-xl p-3 transition body-text';
-        btn.textContent=opt;
-        btn.onclick=()=>checkTrivia(i);
-        opts.appendChild(btn);
-    });
-}
-
-function checkTrivia(idx) {
-    if(triviaAnswered)return;
-    triviaAnswered=true;
-    
-    const p=new URLSearchParams(location.search);
-    const lang=p.get('l')||'es';
-    const t=config[lang].trivia;
-    
-    const correct=(idx===0);
-    const btns=document.querySelectorAll('#trivia-options button');
-    btns.forEach((btn,i)=>{
-        btn.disabled=true;
-        if(i===0) btn.classList.add('trivia-correct');
-        else if(i===idx && !correct) btn.classList.add('trivia-wrong');
-    });
-    
-    const resDiv=document.getElementById('trivia-result');
-    const icon=document.getElementById('trivia-result-icon');
-    const text=document.getElementById('trivia-result-text');
-    
-    icon.textContent=correct?'🎉':'😅';
-    text.textContent=correct?t.right:t.wrong;
-    resDiv.classList.remove('hidden');
-    
-    if(correct){
-        setTimeout(startPhonkMusic,200);
-        epicConfetti();
-        const card=document.getElementById('main-container');
-        card.classList.add('celebrate-flash');
-        setTimeout(()=>card.classList.remove('celebrate-flash'),2000);
-        setTimeout(()=>{ if(musicMode==='phonk') startRomanticMusic(); },8000);
-    } else{
-        playDing(220,330);
-    }
-}
-
-function epicConfetti() {
-    const colors=['#ff4d6d','#ffd700','#ff85a1','#00ff88','#4d88ff','#ff6b35','#a855f7'];
-    const end=Date.now()+4000;
-    (function frame(){
-        confetti({particleCount:8,angle:60, spread:55,origin:{x:0},colors});
-        confetti({particleCount:8,angle:120,spread:55,origin:{x:1},colors});
-        confetti({particleCount:5,angle:90, spread:70,origin:{x:.5,y:0},colors});
-        if(Date.now()<end) requestAnimationFrame(frame);
-    })();
-    confetti({particleCount:200,spread:100,origin:{y:.5},colors});
-}
-
-function launchConfetti() {
-    const c=['#ff4d6d','#ff85a1','#ffd6e0','#ff0054','#ffccd5'];
-    confetti({particleCount:110,spread:70,origin:{y:.65},colors:c});
-    setTimeout(()=>{
-        confetti({particleCount:65,angle:60, spread:55,origin:{x:0,y:.7},colors:c});
-        confetti({particleCount:65,angle:120,spread:55,origin:{x:1,y:.7},colors:c});
-    },380);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ACTIONS
-// ═══════════════════════════════════════════════════════════════
-function goToCreator() { window.location.href=location.origin+location.pathname; }
-function showDonationJoke() { alert(config[currentLang].donation); }
-
-// ═══════════════════════════════════════════════════════════════
-// STATS (localStorage - privacy)
-// ═══════════════════════════════════════════════════════════════
-function getDeviceId() {
-    let did=localStorage.getItem('device_id');
-    if(!did){ did='dev_'+Math.random().toString(36).substr(2,9); localStorage.setItem('device_id',did); }
-    return did;
-}
-function getMyVisits() { return parseInt(localStorage.getItem('my_visits')||'0'); }
-function incMyVisits() { localStorage.setItem('my_visits',(getMyVisits()+1).toString()); }
-function getMyLinks() { return parseInt(localStorage.getItem('my_links')||'0'); }
-function incMyLinks() { localStorage.setItem('my_links',(getMyLinks()+1).toString()); }
-
-function handleStatsTrigger() {
-    statsClicks++; clearTimeout(statsTimer);
-    statsTimer=setTimeout(()=>{statsClicks=0;},2000);
-    if(statsClicks>=5){ statsClicks=0; showStats(); }
-}
-function showStats() {
-    const t=config[currentLang]; const did=getDeviceId();
-    const myV=getMyVisits(); const myL=getMyLinks();
-    alert(t.statsResult.replace('{did}',did).replace('{myvisits}',myV).replace('{mylinks}',myL));
-}
-
-// ═══════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════
-window.onload=()=>{
-    const p=new URLSearchParams(location.search);
-    setupFirstClickMusic();
-    
-    if(p.has('c')){
-        // RECEIVER
-        document.getElementById('creator-view').classList.add('hidden');
-        document.getElementById('receiver-view').classList.remove('hidden');
-        const lang=p.get('l')||'es'; const t=config[lang]; currentLang=lang;
-        document.getElementById('tap-title').textContent=t.tapTitle;
-        document.getElementById('tap-sub').textContent=t.tapSub;
-        document.getElementById('tap-btn').textContent=t.tapBtn;
-        document.getElementById('tap-hint').textContent=t.tapHint;
-        ['es','en','fr','pt'].forEach(x=>document.getElementById('btn-lang-'+x).classList.toggle('active',x===lang));
-        incMyVisits();
-    } else{
-        // CREATOR
-        changeLang('es');
-    }
-};
 
