@@ -4,21 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sorpresa Especial 🎁</title>
-    <meta property="og:title" content="💝 Tienes una sorpresa especial">
+    <meta property="og:title"       content="💝 Tienes una sorpresa especial">
     <meta property="og:description" content="Alguien pensó en ti hoy y te envió una dedicatoria especial. ¡Toca para abrirla! ❤️">
-    <meta property="og:image" content="https://thumbs.dreamstime.com/b/d-kawaii-valentines-day-gift-box-red-ribbon-heart-shaped-candies-golden-coins-soft-pink-clouds-glowing-stars-confetti-421078191.jpg">
-    <meta property="og:image:width" content="1200">
+    <meta property="og:image"       content="https://thumbs.dreamstime.com/b/d-kawaii-valentines-day-gift-box-red-ribbon-heart-shaped-candies-golden-coins-soft-pink-clouds-glowing-stars-confetti-421078191.jpg">
+    <meta property="og:image:width"  content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="💝 Tienes una sorpresa especial">
+    <meta property="og:type"         content="website">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="💝 Tienes una sorpresa especial">
     <meta name="twitter:description" content="Alguien pensó en ti hoy. ¡Toca para abrir tu dedicatoria! ❤️">
-    <meta name="twitter:image" content="https://thumbs.dreamstime.com/b/d-kawaii-valentines-day-gift-box-red-ribbon-heart-shaped-candies-golden-coins-soft-pink-clouds-glowing-stars-confetti-421078191.jpg">
+    <meta name="twitter:image"       content="https://thumbs.dreamstime.com/b/d-kawaii-valentines-day-gift-box-red-ribbon-heart-shaped-candies-golden-coins-soft-pink-clouds-glowing-stars-confetti-421078191.jpg">
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -27,21 +27,21 @@
 
 <body class="min-h-screen flex items-center justify-center p-3 overflow-x-hidden">
 
-    <!-- LANG BUTTONS (4 IDIOMAS) -->
-    <div class="fixed top-4 right-4 z-50 flex gap-2 flex-wrap justify-end" style="max-width: 200px;">
-        <button onclick="changeLang('es')" id="btn-lang-es" class="lang-btn active px-3 py-2 rounded-full text-xs font-bold transition border backdrop-blur-sm">🇲🇽 ES</button>
-        <button onclick="changeLang('en')" id="btn-lang-en" class="lang-btn px-3 py-2 rounded-full text-xs font-bold transition border backdrop-blur-sm">🇺🇸 EN</button>
-        <button onclick="changeLang('pt')" id="btn-lang-pt" class="lang-btn px-3 py-2 rounded-full text-xs font-bold transition border backdrop-blur-sm">🇧🇷 PT</button>
-        <button onclick="changeLang('fr')" id="btn-lang-fr" class="lang-btn px-3 py-2 rounded-full text-xs font-bold transition border backdrop-blur-sm">🇫🇷 FR</button>
+    <!-- LANG BUTTONS (4 idiomas) -->
+    <div class="fixed top-4 right-4 z-50 flex gap-2 flex-wrap justify-end max-w-xs">
+        <button onclick="changeLang('es')" id="btn-lang-es" class="lang-btn active px-3 py-2 rounded-full text-sm font-bold transition border backdrop-blur-sm">🇲🇽 ES</button>
+        <button onclick="changeLang('en')" id="btn-lang-en" class="lang-btn px-3 py-2 rounded-full text-sm font-bold transition border backdrop-blur-sm">🇺🇸 EN</button>
+        <button onclick="changeLang('fr')" id="btn-lang-fr" class="lang-btn px-3 py-2 rounded-full text-sm font-bold transition border backdrop-blur-sm">🇫🇷 FR</button>
+        <button onclick="changeLang('pt')" id="btn-lang-pt" class="lang-btn px-3 py-2 rounded-full text-sm font-bold transition border backdrop-blur-sm">🇧🇷 PT</button>
     </div>
 
-    <!-- MUSIC -->
-    <button id="music-btn" onclick="toggleMusic()" class="music-btn fixed bottom-6 left-4 z-50" title="Música">🎵</button>
-
-    <!-- STATS DASHBOARD BUTTON -->
-    <button id="stats-dashboard-btn" onclick="showStatsDashboard()" class="fixed bottom-6 right-4 z-50 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-pink-500/30 transition">
-        📊 Stats
+    <!-- STATS BUTTON -->
+    <button id="stats-btn" onclick="showDashboard()" class="stats-btn fixed top-4 left-4 z-50" title="Ver Estadísticas">
+        📊
     </button>
+
+    <!-- MUSIC BUTTON -->
+    <button id="music-btn" onclick="toggleMusic()" class="music-btn fixed bottom-6 left-4 z-50" title="Música">🎵</button>
 
     <!-- MAIN CARD -->
     <div id="main-container" class="card-main rounded-[2.5rem] max-w-md w-full text-center relative">
@@ -49,8 +49,8 @@
         <!-- =========== CREATOR VIEW =========== -->
         <div id="creator-view" class="px-7 pt-8 pb-7">
             <div class="text-5xl mb-3 heartbeat">💝</div>
-            <h1 id="ui-title" class="page-title mb-1">MENSAJERÍA VIP</h1>
-            <p id="ui-desc" class="text-pink-500 mb-6 font-bold uppercase tracking-widest sub-desc">Personaliza tu envío 💌</p>
+            <h1 id="ui-title"  class="page-title mb-1">MENSAJERÍA VIP</h1>
+            <p  id="ui-desc"   class="text-pink-500 mb-6 font-bold uppercase tracking-widest sub-desc">Personaliza tu envío 💕</p>
 
             <div class="space-y-4 text-left">
                 <div>
@@ -95,9 +95,9 @@
             <div id="tap-overlay" class="py-6 px-2 fade-in">
                 <div class="gift-bounce mb-5" style="font-size:5.5rem">🎁</div>
                 <h2 id="tap-title" class="page-title mb-2">Tienes una sorpresa</h2>
-                <p id="tap-sub" class="body-text text-slate-500 mb-8">Alguien pensó en ti hoy 💕</p>
+                <p  id="tap-sub"   class="body-text text-slate-500 mb-8">Alguien pensó en ti hoy 💕</p>
                 <button id="tap-btn" onclick="beginPrank()" class="btn-primary pulse-btn text-white font-black rounded-2xl shadow-xl transform active:scale-95 transition btn-text-lg py-4 px-12">
-                    ¡Abrir! 💌
+                    ¡Abrir! 💝
                 </button>
                 <p id="tap-hint" class="hint-text text-slate-300 mt-5">🔊 Activa el sonido para la experiencia completa</p>
             </div>
@@ -130,13 +130,13 @@
                     <div id="game-amor" class="hidden">
                         <p id="question-text" class="font-black mb-4 text-pink-500 body-text">¿Me perdonas la broma? 🥺</p>
                         <div id="btn-no-wrapper" class="relative flex justify-center items-center" style="height:56px">
-                            <button id="btn-yes" onclick="celebrate()" class="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-10 py-3 rounded-full font-black shadow-lg z-10 transform active:scale-95 transition btn-text">SÍ ❤️</button>
+                            <button id="btn-yes" onclick="celebrate()" class="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-10 py-3 rounded-full font-black shadow-lg z-10 transform active:scale-95 transition btn-text">Sí ❤️</button>
                             <button id="btn-no" class="bg-slate-200 text-slate-500 px-7 py-2.5 rounded-full font-bold transition absolute right-0 body-text">NO</button>
                         </div>
                         <div id="celebrate-msg" class="hidden mt-4 fade-in text-center">
                             <div style="font-size:2.5rem;margin-bottom:4px">🥰</div>
                             <p id="celebrate-text" class="font-black text-pink-500 body-text">¡Lo sabía!</p>
-                            <p id="celebrate-sub" class="text-slate-600 mt-1 body-text">¡Gracias! Te quiero mucho ❤️</p>
+                            <p id="celebrate-sub"  class="text-slate-600 mt-1 body-text">¡Gracias! Te quiero mucho ❤️</p>
                         </div>
                     </div>
 
@@ -202,20 +202,40 @@
         </div><!-- /receiver-view -->
     </div><!-- /main-container -->
 
-    <!-- STATS DASHBOARD MODAL -->
-    <div id="stats-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div class="sticky top-0 bg-gradient-to-r from-pink-500 to-rose-500 text-white p-6 rounded-t-3xl">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-black">📊 Panel de Estadísticas</h2>
-                    <button onclick="closeStatsDashboard()" class="text-white/80 hover:text-white text-3xl leading-none">&times;</button>
+    <!-- DASHBOARD MODAL -->
+    <div id="dashboard-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden items-center justify-center p-4" onclick="closeDashboard(event)">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-black text-slate-800">📊 Estadísticas en Tiempo Real</h2>
+                <button onclick="closeDashboard()" class="text-3xl text-slate-400 hover:text-slate-600 transition">&times;</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-gradient-to-br from-pink-50 to-rose-50 p-5 rounded-2xl border-2 border-pink-200">
+                    <div class="text-3xl mb-2">💝</div>
+                    <div class="text-3xl font-black text-pink-600" id="total-messages">0</div>
+                    <div class="text-sm font-bold text-pink-500 uppercase tracking-wide">Mensajes Enviados</div>
+                </div>
+                <div class="bg-gradient-to-br from-purple-50 to-indigo-50 p-5 rounded-2xl border-2 border-purple-200">
+                    <div class="text-3xl mb-2">👀</div>
+                    <div class="text-3xl font-black text-purple-600" id="total-views">0</div>
+                    <div class="text-sm font-bold text-purple-500 uppercase tracking-wide">Vistas Totales</div>
                 </div>
             </div>
-            <div id="stats-content" class="p-6">
-                <div class="text-center py-8">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-pink-200 border-t-pink-500"></div>
-                    <p class="mt-4 text-slate-500">Cargando estadísticas...</p>
-                </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-black text-slate-700 mb-3">📈 Categorías Más Populares</h3>
+                <div id="categories-chart" class="space-y-2"></div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-black text-slate-700 mb-3">🌍 Idiomas Preferidos</h3>
+                <div id="languages-chart" class="space-y-2"></div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-black text-slate-700 mb-3">📝 Mensajes Recientes</h3>
+                <div id="recent-messages" class="space-y-2 max-h-60 overflow-y-auto"></div>
             </div>
         </div>
     </div>
@@ -223,3 +243,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
